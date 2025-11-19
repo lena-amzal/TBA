@@ -1,7 +1,30 @@
-# Define the Room class.
+# This file contains the Room class.
 
 class Room:
+    """
+    This class represents a room. A room is composed of a room name, a description and an exit.
 
+    Attributes:
+        name (str): The name word.
+        description (str): the description string.
+        exit (dict): next room
+
+    Methods:
+        __init__(self, name, description) : The constructor.
+        get_exit(self, direction) : Return Room.
+        get_exit_string(self) : Return string according to the room.
+        get_long_description(self) : return long description of the room.
+
+    Examples:
+    >>> room = room("nom de la pièce","description de la pièce")
+    >>> room.name
+    "nom de la pièce"
+    >>> room.description
+    "description de la pièce"
+    >>> type(room.exits)
+    <class 'dict'>
+
+    """
     # Define the constructor. 
     def __init__(self, name, description):
         self.name = name
@@ -28,4 +51,4 @@ class Room:
 
     # Return a long description of this room including exits.
     def get_long_description(self):
-        return f"\nVous êtes {self.description}\n\n{self.get_exit_string()}\n"
+        return f"\nVous êtes dans {self.description}\n\n{self.get_exit_string()}\n"
