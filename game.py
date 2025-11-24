@@ -15,6 +15,7 @@ class Game:
         self.rooms = []
         self.commands = {}
         self.player = None
+        self.direction= set() #ensemble des directions valides
     
     # Setup the game
     def setup(self):
@@ -30,32 +31,42 @@ class Game:
         
         # Setup rooms
 
-        forest = Room("Forest", "dans une forêt enchantée. Vous entendez une brise légère à travers la cime des arbres.")
-        self.rooms.append(forest)
-        tower = Room("Tower", "dans une immense tour en pierre qui s'élève au dessus des nuages.")
-        self.rooms.append(tower)
-        cave = Room("Cave", "dans une grotte profonde et sombre. Des voix semblent provenir des profondeurs.")
-        self.rooms.append(cave)
-        cottage = Room("Cottage", "dans un petit chalet pittoresque avec un toit de chaume. Une épaisse fumée verte sort de la cheminée.")
-        self.rooms.append(cottage)
-        swamp = Room("Swamp", "dans un marécage sombre et ténébreux. L'eau bouillonne, les abords sont vaseux.")
-        self.rooms.append(swamp)
-        castle = Room("Castle", "dans un énorme château fort avec des douves et un pont levis. Sur les tours, des flèches en or massif.")
-        self.rooms.append(castle)
+        grotte = Room("Prehistoire", "  à l'ère préhistorique, tu es dans une grotte, l'air y est humide et froid. Face à toi, l'entrée de la grotte .")
+        self.rooms.append(grotte)
+        mammouths = Room("Prehistoire", "  face à un combat opposant un mammouths et un Homme préhistorique.")
+        self.rooms.append(mammouths)
+        abri= Room("Abris", "avec votre nouveau compagnon, il vous amène dans son abri sous roche et vous aide à faire du feu")
+        self.rooms.append(abri)
+        egypte_antique = Room("Egypte Antique", "dans une pyramide, où la pierre polie reflète faiblement la lumière des torches. L’air est sec et chargé d’une atmosphère mystique, ponctuée par l’écho de tes pas.")
+        self.rooms.append(egypte_antique)
+        question_chambre_cachée = Room("Egypte Antique", "dans une impasse, face à vous les murs sont couverts de hiéroglyphes, racontant l'histoire des dieux et des rois.")
+        self.rooms.append(question_chambre_cachée)
+        chambre_cachée = Room("Egypte Antique", " dans une chambre cachée qui s'est debloquée après avoir répondu aux questions d'Imhopen, au sol une clé rouillée que vous ramassez.")
+        self.rooms.append(chambre_cachée)
+        porte = Room("Egypte Antique", " devant une porte fermée a clé à votre droite se trouve une zone peu éclairée")
+        self.rooms.append(porte)
+        passage_interdit = Room("Egypte Antique", " faire l'exercice")
+        self.rooms.append(passage_interdit)
+        spinxe = Room("Egypte Antique", " devant la créature sphinxe")
+        self.rooms.append(sphinxe)
+
+        
 
         # Create exits for rooms
 
-        forest.exits = {"N" : cave, "E" : tower, "S" : castle, "O" : None}
-        tower.exits = {"N" : cottage, "E" : None, "S" : swamp, "O" : forest}
-        cave.exits = {"N" : None, "E" : cottage, "S" : forest, "O" : None}
-        cottage.exits = {"N" : None, "E" : None, "S" : tower, "O" : cave}
-        swamp.exits = {"N" : tower, "E" : None, "S" : None, "O" : castle}
-        castle.exits = {"N" : forest, "E" : swamp, "S" : None, "O" : None}
-
+        grotte.exits = {"N" : mammouths, "E" : None, "S" : None, "O" : None}
+        mammouths.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : None}
+        abri.exits = {"N" : passage_interdit, "E" : None, "S" : egypte_antique, "O" : None}
+        passage_interdit.exits = {"N" : None, "E" : None, "S" : abri, "O" : None}
+        egypte_antique.exits = {"D" : porte , "E" : None , "S" : None, "O" : question_chambre_cachée}
+        question_chambre_cachée.exits = {"D" : chambre_cachée, "E" : egypte_antique, "S" : None, "O" : None}
+        chambre_cachée.exits = {"U" : question_chambre_cachée, "E" : None, "S" : None, "O" : None}
+        porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None}
+        
         # Setup player and starting room
 
         self.player = Player(input("\nEntrez votre nom: "))
-        self.player.current_room = swamp
+        self.player.current_room = grotte
 
     # Play the game
     def play(self):
@@ -75,6 +86,10 @@ class Game:
 
         command_word = list_of_words[0]
 
+               # Construire automatiquement l'ensemble des directions valides
+        for room in self.rooms:
+            self.direction |= {dir for dir, adj in room.exits.items() if adj is not None}
+
         # If the command is not recognized, print an error message
         if command_word not in self.commands.keys():
             print(f"\nCommande '{command_word}' non reconnue. Entrez 'help' pour voir la liste des commandes disponibles.\n")
@@ -82,7 +97,7 @@ class Game:
         else:
             command = self.commands[command_word]
             command.action(self, list_of_words, command.number_of_parameters)
-
+      
     # Print the welcome message
     def print_welcome(self):
         print(f"\nBienvenue {self.player.name} dans ce jeu d'aventure !")
