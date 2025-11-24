@@ -27,7 +27,6 @@ class Game:
         self.commands["quit"] = quit
         go = Command("go", " <direction> : se déplacer dans une direction cardinale (N, E, S, O)", Actions.go, 1)
         self.commands["go"] = go
-        
         # Setup rooms
 
         forest = Room("Forest", " une forêt enchantée. Vous entendez une brise légère à travers la cime des arbres.")
@@ -53,19 +52,31 @@ class Game:
         castle.exits = {"N" : forest, "E" : swamp, "S" : None, "O" : None}
 
         # Setup player and starting room
-
-        self.player = Player(input("\nEntrez votre nom: "))
+        history=[]
+        self.player = Player(input("\nEntrez votre nom: "),history)
         self.player.current_room = swamp
-
+     
     # Play the game
     def play(self):
         self.setup()
         self.print_welcome()
+        
         # Loop until the game is finished
         while not self.finished:
             # Get the command from the player
             self.process_command(input("> "))
         return None
+
+            # obtenir l'historique des pièces visitées
+    def get_history(self):
+        history=self.player.history
+        if len(history)>0:
+            print("vous avez déjà visité les pièces suivantes :\n")
+            for room in history:
+                print("-",room.name,"\n")    
+        else:
+            print("Aucune pièce visitée auparavant.")
+        
 
     # Process the command entered by the player
     def process_command(self, command_string) -> None:
@@ -85,6 +96,7 @@ class Game:
         else:
             command = self.commands[command_word]
             command.action(self, list_of_words, command.number_of_parameters)
+            self.get_history()
 
     # Print the welcome message
     def print_welcome(self):

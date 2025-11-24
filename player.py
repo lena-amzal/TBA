@@ -2,7 +2,7 @@
 
 class Player():
     """
-    This class represents a player. A player is composed of a rooplayer name and a player self.
+    This class represents a player. A player is composed of a player name and a player self.
 
     Attributes:
         name (str): The name word.
@@ -21,9 +21,10 @@ class Player():
 
     """
     # Define the constructor.
-    def __init__(self, name):
+    def __init__(self, name, history):
         self.name = name
         self.current_room = None
+        self.history=history
     
     # Define the move method.
     def move(self, direction):
@@ -37,7 +38,9 @@ class Player():
         
         # Set the current room to the next room.
         self.current_room = next_room
+        self.history.append(self.current_room)
         print(self.current_room.get_long_description())
         return True
+    
 
     
