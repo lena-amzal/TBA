@@ -1,6 +1,25 @@
-# Define the Player class.
-class Player():
+# This file contains the Player class.
 
+class Player():
+    """
+    This class represents a player. A player is composed of a rooplayer name and a player self.
+
+    Attributes:
+        name (str): The name word.
+        current_room (str): the room where the player is.
+
+    Methods:
+        __init__(self, name) : The constructor.
+        move(self,direction) : move the player to the next room according to the direction
+    
+    Examples:
+    >>> player = Player("nom du joueur", "la pièce où le joueur se trouve")
+    >>> player.name
+    "nom du joueur"
+    >>> player.current_room
+    "la pièce où le joueur se trouve"
+
+    """
     # Define the constructor.
     def __init__(self, name):
         self.name = name

@@ -31,6 +31,7 @@ class Game:
         
         # Setup rooms
 
+
         grotte = Room("Prehistoire", "  à l'ère préhistorique, tu es dans une grotte, l'air y est humide et froid. Face à toi, l'entrée de la grotte .")
         self.rooms.append(grotte)
         mammouths = Room("Prehistoire", "  face à un combat opposant un mammouths et un Homme préhistorique.")
@@ -47,7 +48,7 @@ class Game:
         self.rooms.append(porte)
         passage_interdit = Room("Egypte Antique", " faire l'exercice")
         self.rooms.append(passage_interdit)
-        spinxe = Room("Egypte Antique", " devant la créature sphinxe")
+        sphinxe = Room("Egypte Antique", " devant la créature sphinxe")
         self.rooms.append(sphinxe)
 
         
@@ -63,6 +64,7 @@ class Game:
         chambre_cachée.exits = {"U" : question_chambre_cachée, "E" : None, "S" : None, "O" : None}
         porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None}
         
+
         # Setup player and starting room
 
         self.player = Player(input("\nEntrez votre nom: "))
@@ -92,7 +94,10 @@ class Game:
 
         # If the command is not recognized, print an error message
         if command_word not in self.commands.keys():
-            print(f"\nCommande '{command_word}' non reconnue. Entrez 'help' pour voir la liste des commandes disponibles.\n")
+            if command_word=="":
+                print(">")
+            else:
+                print(f"\nCommande '{command_word}' non reconnue. Entrez 'help' pour voir la liste des commandes disponibles.\n")
         # If the command is recognized, execute it
         else:
             command = self.commands[command_word]
