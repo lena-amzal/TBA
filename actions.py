@@ -53,11 +53,33 @@ class Actions:
             print(MSG1.format(command_word=command_word))
             return False
 
-        # Get the direction from the list of words.
-        direction = list_of_words[1]
-        # Move the player in the direction specified by the parameter.
-        player.move(direction)
-        return True
+        direction_map = {
+            "N": "N", "NORD": "N", "Nord": "N", "nord": "N",
+            "S": "S", "SUD": "S", "Sud": "S", "sud": "S",
+            "E": "E", "EST": "E", "Est": "E", "est": "E",
+            "O": "O", "OUEST": "O", "Ouest": "O", "ouest": "O",
+            "U": "U", "UP": "U", "Up": "U", "up": "U",
+            "D": "D", "DOWN": "D", "Down": "D", "down": "D"
+        }
+
+        dir_input = list_of_words[1]
+        # Try exact match first, then uppercase form to be case-insensitive.
+        direction = direction_map.get(dir_input) or direction_map.get(dir_input.upper())
+
+        if direction is None:
+            print(f"Direction '{dir_input}' non reconnue.")
+            print(game.player.current_room.get_long_description())  # Affiche la salle actuelle
+            return False
+
+        # Vérifier que la direction est valide dans tout le jeu
+        if direction not in game.direction:
+            print(f"Direction '{direction}' non reconnue.")
+            return False
+
+        # Tenter déplacement dans la direction choisie
+        result = player.move(direction)
+        # player.move devrait gérer si le déplacement est impossible (pas de sortie)
+        return result
 
     def quit(game, list_of_words, number_of_parameters):
         """
@@ -124,12 +146,41 @@ class Actions:
 
         """
 
+        player = game.player
         # If the number of parameters is incorrect, print an error message and return False.
         l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
+        
+        direction_map = {
+            "N": "N", "NORD": "N", "Nord": "N", "nord": "N",
+            "S": "S", "SUD": "S", "Sud": "S", "sud": "S",
+            "E": "E", "EST": "E", "Est": "E", "est": "E",
+            "O": "O", "OUEST": "O", "Ouest": "O", "ouest": "O",
+            "U": "U", "UP": "U", "Up": "U", "up": "U",
+            "D": "D", "DOWN": "D", "Down": "D", "down": "D"
+        }
+
+        dir_input = list_of_words[1]
+        # Try exact match first, then uppercase form to be case-insensitive.
+        direction = direction_map.get(dir_input) or direction_map.get(dir_input.upper())
+
+        if direction is None:
+            print(f"Direction '{dir_input}' non reconnue.")
+            print(game.player.current_room.get_long_description())  # Affiche la salle actuelle
+            return False
+
+        # Vérifier que la direction est valide dans tout le jeu
+        if direction not in game.direction:
+            print(f"Direction '{direction}' non reconnue.")
+            return False
+
+        # Tenter déplacement dans la direction choisie
+        result = player.move(direction)
+        # player.move devrait gérer si le déplacement est impossible (pas de sortie)
+        return result
         
         # Print the list of available commands.
         print("\nVoici les commandes disponibles:")
