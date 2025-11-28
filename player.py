@@ -7,10 +7,12 @@ class Player():
     Attributes:
         name (str): The name word.
         current_room (str): the room where the player is.
+        inventory (dict): the items that the player has.
 
     Methods:
         __init__(self, name) : The constructor.
         move(self,direction) : move the player to the next room according to the direction
+        get_inventory(str) : return the inventory of the player.
     
     Examples:
     >>> player = Player("nom du joueur", "la pièce où le joueur se trouve")
@@ -20,11 +22,28 @@ class Player():
     "la pièce où le joueur se trouve"
 
     """
+    from item import Item
+
     # Define the constructor.
     def __init__(self, name):
         self.name = name
         self.current_room = None
+        self.inventory = {}
     
+    #Define the get_inventory method.
+    def get_inventory(self):
+        print(self.inventory)
+        if len(self.inventory) == 0:
+            return "Votre inventaire est vide."
+        
+        result= "Votre inventaire contient:\n"
+        for item in self.inventory.values():
+            result += f"- {item}\n"
+        return result
+            
+
+        
+
     # Define the move method.
     def move(self, direction):
         # Get the next room from the exits dictionary of the current room.
@@ -39,5 +58,6 @@ class Player():
         self.current_room = next_room
         print(self.current_room.get_long_description())
         return True
+    
 
     

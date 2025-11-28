@@ -62,7 +62,9 @@ class Game:
         egypte_antique.exits = {"D" : porte , "E" : None , "S" : None, "O" : question_chambre_cachée}
         question_chambre_cachée.exits = {"D" : chambre_cachée, "E" : egypte_antique, "S" : None, "O" : None}
         chambre_cachée.exits = {"U" : question_chambre_cachée, "E" : None, "S" : None, "O" : None}
-        porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None}
+        porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None, "N": sphinxe}
+        sphinxe.exits = {"S" : None, "E" : None, "O" : None, "N" : None}
+        
         
 
         # Setup player and starting room
