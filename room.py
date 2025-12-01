@@ -30,7 +30,20 @@ class Room:
         self.name = name
         self.description = description
         self.exits = {}
+        self.inventory = {}
     
+     # Define the get_inventory method.
+    def get_inventory(self):
+        print(self.inventory)
+        if len(self.inventory) == 0:
+            return "Il n'y a rien ici."
+       
+               
+        result= "La pièce contient:\n"
+        for item in self.inventory.items():
+            result += f"- {item}\n"
+        return result
+
     # Define the get_exit method.
     def get_exit(self, direction):
 

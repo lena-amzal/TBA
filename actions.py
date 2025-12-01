@@ -79,7 +79,13 @@ class Actions:
         # Tenter déplacement dans la direction choisie
         result = player.move(direction)
         # player.move devrait gérer si le déplacement est impossible (pas de sortie)
+        game.get_history()
         return result
+    
+    def look(game, list_of_words, number_of_parameters):
+        print(game.player.current_room.get_long_description())
+        print(game.player.current_room.inventory())
+
 
     def quit(game, list_of_words, number_of_parameters):
         """
@@ -143,13 +149,34 @@ class Actions:
         False
         >>> help(game, ["help", "N", "E"], 0)
         False
-
         """
-        
-        
+        l=len(list_of_words)
+        if l != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            
         # Print the list of available commands.
         print("\nVoici les commandes disponibles:")
         for command in game.commands.values():
             print("\t- " + str(command))
         print()
+        return True
+
+    def history(game, list_of_words, number_of_parameters):
+        l=len(list_of_words)
+        if l != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            return False
+        game.get_history()
+        return True
+    
+    def back (game, list_of_words, number_of_parameters):
+        l=len(list_of_words)
+        if l != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            return False
+        game.back()
+        game.get_history()
         return True

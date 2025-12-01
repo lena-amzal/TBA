@@ -28,9 +28,7 @@ class Player():
     def __init__(self, name, history):
         self.name = name
         self.current_room = None
-
         self.inventory = {}
-
         self.history=history
 
     
@@ -59,8 +57,8 @@ class Player():
             return False
         
         # Set the current room to the next room.
-        self.current_room = next_room
         self.history.append(self.current_room)
+        self.current_room = next_room
         print(self.current_room.get_long_description())
         return True
     

@@ -6,6 +6,7 @@ from room import Room
 from player import Player
 from command import Command
 from actions import Actions
+from item import Item
 
 class Game:
 
@@ -28,50 +29,50 @@ class Game:
         self.commands["quit"] = quit
         go = Command("go", " <direction> : se déplacer dans une direction cardinale (N, E, S, O)", Actions.go, 1)
         self.commands["go"] = go
+        history=Command("history", ": obtenir l'historique",Actions.history, 0)
+        self.commands["history"]=history
+        back=Command("back",":revenir à la pièce précédente",Actions.back,0)
+        self.commands["back"]=back
+        look = Command("look", " : décrire l'environnement actuel et les items", Actions.look, 0)
+        self.commands["look"] = look
+
+
         # Setup rooms
 
-
-        grotte = Room("Prehistoire", "à l'ère préhistorique, tu es dans une grotte, l'air y est humide et froid. Face à toi, l'entrée de la grotte .")
+        grotte = Room("Grotte", "à l'ère préhistorique, tu es dans une grotte, l'air y est humide et froid. Face à toi, l'entrée de la grotte .")
         self.rooms.append(grotte)
-        mammouths = Room("Prehistoire", " face à un combat opposant un mammouth et un Homme préhistorique.")
+        mammouths = Room("Combat avec un mammouth", " face à un combat opposant un mammouth et un Homme préhistorique.")
         self.rooms.append(mammouths)
-        abri= Room("Abri", "avec votre nouveau compagnon, il vous amène dans son abri et vous aide à faire du feu")
+        abri= Room("Grotte du compagnon", "avec votre nouveau compagnon, il vous amène dans sa grotte et vous aide à faire du feu")
         self.rooms.append(abri)
-        egypte_antique = Room("Egypte Antique", "dans une pyramide, où la pierre polie reflète faiblement la lumière des torches. L’air est sec et chargé d’une atmosphère mystique, ponctuée par l’écho de tes pas.")
+        egypte_antique = Room("couloir dans la pyramide", "dans une pyramide, où la pierre polie reflète faiblement la lumière des torches. L’air est sec et chargé d’une atmosphère mystique, ponctuée par l’écho de tes pas.")
         self.rooms.append(egypte_antique)
-        question_chambre_cachee = Room("Egypte Antique", "dans une impasse, face à vous les murs sont couverts de hiéroglyphes, racontant l'histoire des dieux et des rois.")
+        question_chambre_cachee = Room("Impasse Hiéroglyphes", "dans une impasse, face à vous les murs sont couverts de hiéroglyphes, racontant l'histoire des dieux et des rois.")
         self.rooms.append(question_chambre_cachee)
-        chambre_cachee = Room("Egypte Antique", " dans une chambre cachée qui s'est debloquée après avoir répondu aux questions d'Imhopen, au sol une clé rouillée que vous ramassez.")
+        chambre_cachee = Room("Chambre cachée", " dans une chambre cachée qui s'est debloquée après avoir répondu aux questions d'Imhopen, au sol une clé rouillée que vous ramassez.")
         self.rooms.append(chambre_cachee)
-        porte = Room("Egypte Antique", " devant une porte fermée a clé à votre droite se trouve une zone peu éclairée")
+        porte = Room("Porte verouillée", " devant une porte fermée a clé à votre droite se trouve une zone peu éclairée")
         self.rooms.append(porte)
-        passage_interdit = Room("Egypte Antique", " faire l'exercice")
-        self.rooms.append(passage_interdit)
-        sphinx = Room("Egypte Antique", " devant la créature sphinx")
+        sphinx = Room("Sphinx", " devant la créature sphinx")
         self.rooms.append(sphinx)
 
+        #create items for rooms
+        sword = Item("sword", "une épée au fil tranchant comme un rasoir", 2)
+        grotte.inventory["sword"] = sword
 
-        
 
         # Create exits for rooms
 
-
         grotte.exits = {"N" : mammouths, "E" : None, "S" : None, "O" : None}
         mammouths.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : None}
-        abri.exits = {"N" : passage_interdit, "E" : None, "S" : egypte_antique, "O" : None}
-        passage_interdit.exits = {"N" : None, "E" : None, "S" : abri, "O" : None}
+        abri.exits = {"N" : None, "E" : None, "S" : egypte_antique, "O" : None}
         egypte_antique.exits = {"D" : porte , "E" : None , "S" : None, "O" : question_chambre_cachee}
         question_chambre_cachee.exits = {"D" : chambre_cachee, "E" : egypte_antique, "S" : None, "O" : None}
         chambre_cachee.exits = {"U" : question_chambre_cachee, "E" : None, "S" : None, "O" : None}
         porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None, "N": sphinx}
         sphinx.exits = {"S" : None, "E" : None, "O" : None, "N" : None}
         
-        
-
-        # Setup player and starting room
-
-        self.player = Player(input("\nEntrez votre nom: "))
-
+    
         
         # Setup player and starting room
         history=[]
@@ -89,7 +90,7 @@ class Game:
             self.process_command(input("> "))
         return None
 
-            # obtenir l'historique des pièces visitées
+    # obtenir l'historique des pièces visitées
     def get_history(self):
         history=self.player.history
         if len(history)>0:
@@ -98,7 +99,16 @@ class Game:
                 print("-",room.name,"\n")    
         else:
             print("Aucune pièce visitée auparavant.")
-        
+
+    # revenir à la pièce précédente
+    def back(self):
+        history=self.player.history
+        if len(history)<2:
+            print("vous ne pouvez pas revenir en arrière")
+        else:
+            history.pop()
+            Player.current_room=history[-1]
+            print(Player.current_room.get_long_description()) 
 
     # Process the command entered by the player
     def process_command(self, command_string) -> None:
@@ -108,23 +118,22 @@ class Game:
 
         command_word = list_of_words[0]
 
-               # Construire automatiquement l'ensemble des directions valides
+        # Construire automatiquement l'ensemble des directions valides
         for room in self.rooms:
             self.direction |= {dir for dir, adj in room.exits.items() if adj is not None}
-
+ 
         # If the command is not recognized, print an error message
         if command_word not in self.commands.keys():
             if command_word=="":
                 print(">")
             else:
                 print(f"\nCommande '{command_word}' non reconnue. Entrez 'help' pour voir la liste des commandes disponibles.\n")
+
         # If the command is recognized, execute it
         else:
             command = self.commands[command_word]
             command.action(self, list_of_words, command.number_of_parameters)
 
-
-            self.get_history()
 
     # Print the welcome message
     def print_welcome(self):
