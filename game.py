@@ -35,6 +35,12 @@ class Game:
         self.commands["back"]=back
         look = Command("look", " : décrire l'environnement actuel et les items", Actions.look, 0)
         self.commands["look"] = look
+        take = Command("take", " <item> : prendre un item", Actions.take, 1)
+        self.commands["take"] = take
+        drop = Command("drop", " <item> : déposer un item", Actions.drop, 1)
+        self.commands["drop"] = drop
+        check = Command("check", " <item> : vérifier un item dans l'inventaire", Actions.check, 0)
+        self.commands["check"] = check
 
 
         # Setup rooms
@@ -57,8 +63,8 @@ class Game:
         self.rooms.append(sphinx)
 
         #create items for rooms
-        sword = Item("sword", "une épée au fil tranchant comme un rasoir", 2)
-        grotte.inventory["sword"] = sword
+        lance = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
+        mammouths.inventory["lance"] = lance
 
 
         # Create exits for rooms
@@ -109,6 +115,54 @@ class Game:
             history.pop()
             Player.current_room=history[-1]
             print(Player.current_room.get_long_description()) 
+    
+    
+
+    def take(self, item_name):
+        current_room = self.player.current_room
+        
+        # vérifier si l’item est présent dans la pièce
+        if item_name not in current_room.inventory:
+            print("Cet objet n'est pas ici.")
+            return
+        
+        # prendre l’item → le retirer de la pièce…
+        item = current_room.inventory.pop(item_name)
+
+        # …et l’ajouter à l’inventaire du joueur
+        self.player.inventory[item_name] = item
+
+        print(f"Vous avez pris {item_name}.")
+
+    def drop(self, item_name):
+        current_room = self.player.current_room
+
+        # vérifier que le joueur possède l'objet
+        if item_name not in self.player.inventory:
+            print(f"Vous n'avez pas {item_name}.")
+            return
+
+        # retirer de l'inventaire du joueur
+        item = self.player.inventory.pop(item_name)
+
+        # ajouter à la pièce (room.inventory)
+        current_room.inventory[item_name] = item
+
+        print(f"Vous avez déposé {item_name}.")
+
+    def check(self, item_name):
+        if len(self.inventory) == 0:
+            return "Votre inventaire est vide."
+        
+        result= "Vous disposez des items suivants :\n"
+        for item in self.inventory.values():
+            result += f"- {item}\n"
+        return result
+        
+        
+
+
+
 
     # Process the command entered by the player
     def process_command(self, command_string) -> None:

@@ -38,7 +38,7 @@ class Player():
         if len(self.inventory) == 0:
             return "Votre inventaire est vide."
         
-        result= "Votre inventaire contient:\n"
+        result= "Vous disposez des items suivants :\n"
         for item in self.inventory.values():
             result += f"- {item}\n"
         return result

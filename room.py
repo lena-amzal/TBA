@@ -8,12 +8,14 @@ class Room:
         name (str): The name word.
         description (str): the description string.
         exit (dict): next room
+        inventory (dict): the items that the room has.
 
     Methods:
         __init__(self, name, description) : The constructor.
         get_exit(self, direction) : Return Room.
         get_exit_string(self) : Return string according to the room.
         get_long_description(self) : return long description of the room.
+        get_inventory(self) : return the inventory of the room.
 
     Examples:
     >>> room = room("nom de la pièce","description de la pièce")
@@ -31,6 +33,7 @@ class Room:
         self.description = description
         self.exits = {}
         self.inventory = {}
+
     
      # Define the get_inventory method.
     def get_inventory(self):
@@ -52,6 +55,8 @@ class Room:
             return self.exits[direction]
         else:
             return None
+        
+
     
     # Return a string describing the room's exits.
     def get_exit_string(self):
