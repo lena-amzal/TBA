@@ -7,6 +7,7 @@ from player import Player
 from command import Command
 from actions import Actions
 from item import Item
+from room import Door
 
 class Game:
 
@@ -41,6 +42,7 @@ class Game:
         self.commands["drop"] = drop
         check = Command("check", " <item> : vérifier un item dans l'inventaire", Actions.check, 0)
         self.commands["check"] = check
+        
 
 
         # Setup rooms
@@ -65,6 +67,13 @@ class Game:
         #create items for rooms
         lance = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
         mammouths.inventory["lance"] = lance
+        cle = Item("cle", "une clé rouillée", 0.1)
+        chambre_cachee.inventory["cle"] = cle
+        beamer = Item("beamer", "un beamer futuriste", 1)
+        sphinx.inventory["beamer"] = beamer
+
+        #create locked door
+        porte = Door(name="porte", destination=sphinx, locked=True, key_name="cle")
 
 
         # Create exits for rooms
@@ -115,6 +124,15 @@ class Game:
             history.pop()
             Player.current_room=history[-1]
             print(Player.current_room.get_long_description()) 
+
+    def get_inventory(self):
+        return self.player.current_room.get_inventory()
+    
+    def get_inventory_weight(self):
+        total = 0
+        for item in self.inventory.values():
+            total += item.weight
+        return total
     
     
 
@@ -123,11 +141,19 @@ class Game:
         
         # vérifier si l’item est présent dans la pièce
         if item_name not in current_room.inventory:
-            print("Cet objet n'est pas ici.")
+            print(f"L'objet '{item_name}' n'est pas dans la pièce.")
             return
+        
         
         # prendre l’item → le retirer de la pièce…
         item = current_room.inventory.pop(item_name)
+
+        current_weight = self.player.get_inventory_weight()
+        if current_weight + item.weight > self.player.max_weight:
+             return (
+            f"Vous ne pouvez pas prendre '{item_name}' "
+            f"(poids max dépassé : {self.player.max_weight} kg)."
+        )
 
         # …et l’ajouter à l’inventaire du joueur
         self.player.inventory[item_name] = item
@@ -139,7 +165,7 @@ class Game:
 
         # vérifier que le joueur possède l'objet
         if item_name not in self.player.inventory:
-            print(f"Vous n'avez pas {item_name}.")
+            print(f"L'objet '{item_name}' n'est pas dans l'inventaire.")
             return
 
         # retirer de l'inventaire du joueur
@@ -150,14 +176,8 @@ class Game:
 
         print(f"Vous avez déposé {item_name}.")
 
-    def check(self, item_name):
-        if len(self.inventory) == 0:
-            return "Votre inventaire est vide."
-        
-        result= "Vous disposez des items suivants :\n"
-        for item in self.inventory.values():
-            result += f"- {item}\n"
-        return result
+    def check(self):
+        return self.player.check()
         
         
 

@@ -1,5 +1,6 @@
 # This file contains the Room class.
 
+
 class Room:
     """
     This class represents a room. A room is composed of a room name, a description and an exit.
@@ -70,3 +71,20 @@ class Room:
     # Return a long description of this room including exits.
     def get_long_description(self):
         return f"\nVous êtes dans {self.description}\n\n{self.get_exit_string()}\n"
+    
+ #create locked door
+class Door:
+    def __init__(self, name, destination, locked=True, key_name=None):
+        self.name = name
+        self.destination = destination
+        self.locked = locked
+        self.key_name = key_name  # nom de la clé nécessaire
+
+    def unlock(self, player):
+        if self.key_name in player.inventory:
+            self.locked = False
+            print(" La porte se déverrouille.")
+            return True
+        else:
+            print(" La porte est verrouillée. Il te faut une clé.")
+            return False

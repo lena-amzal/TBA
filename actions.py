@@ -196,7 +196,7 @@ class Actions:
                 # item_obj est un objet Item avec name, description, weight
                 print(f"  - {item_name}: {item_obj.description} ({item_obj.weight} kg)")
         else:
-            print("  Rien d'intéressant.")
+            print(" Il n'y a rien ici.")
         
         return True
     
@@ -228,8 +228,17 @@ class Actions:
             print(MSG0.format(command_word=command_word))
             return False
         
-        item_name = list_of_words[1]
-        inventory = game.player.inventory
+        inventory=game.player.inventory
+
+        if len(inventory) == 0:
+            print("Votre inventaire est vide.")
+            return True
+        
+        print("Vous disposez des items suivants :")
+        for item_name, item_obj in inventory.items():
+            print(f"- {item_name}: {item_obj}")
+
+        return True
 
 
         
