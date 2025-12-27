@@ -6,8 +6,8 @@ from room import Room
 from player import Player
 from command import Command
 from actions import Actions
+from character import Character
 from item import Item
-from room import Door
 
 class Game:
 
@@ -19,6 +19,8 @@ class Game:
         self.player = None
         self.direction= set() #ensemble des directions valides
     
+    DEBUG=False
+
     # Setup the game
     def setup(self):
 
@@ -42,12 +44,14 @@ class Game:
         self.commands["drop"] = drop
         check = Command("check", " <item> : vérifier un item dans l'inventaire", Actions.check, 0)
         self.commands["check"] = check
+        talk= Command("talk", " <character> : parler à un personnage", Actions.talk, 1)
+        self.commands["talk"]=talk
         
 
 
         # Setup rooms
 
-        grotte = Room("Grotte", "à l'ère préhistorique, tu es dans une grotte, l'air y est humide et froid. Face à toi, l'entrée de la grotte .")
+        grotte = Room("Grotte", "Vous êtes dans une grotte, l'air y est humide et froid. Face à vous, l'entrée de la grotte .")
         self.rooms.append(grotte)
         mammouths = Room("Combat avec un mammouth", " face à un combat opposant un mammouth et un Homme préhistorique.")
         self.rooms.append(mammouths)
@@ -64,16 +68,24 @@ class Game:
         sphinx = Room("Sphinx", " devant la créature sphinx")
         self.rooms.append(sphinx)
 
+
+
+        #create npc for rooms
+
+        Varkk= Character("Varkk", " Un homme préhistorique robuste, vêtu de peaux de bêtes, maniant une lance en pierre.", mammouths,["Je m'appelle Varkk.","Voulez-vous venir dans ma grotte ?"])      
+        mammouths.characters["Varkk"] = Varkk
+        Pnj_dynamique=Character("test", " un personnage dynamique qui se déplace entre les pièces.",grotte,["Je suis un personnage qui bouge !"])
+        grotte.characters["test"]=Pnj_dynamique
+
+
         #create items for rooms
+
         lance = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
         mammouths.inventory["lance"] = lance
         cle = Item("cle", "une clé rouillée", 0.1)
         chambre_cachee.inventory["cle"] = cle
         beamer = Item("beamer", "un beamer futuriste", 1)
         sphinx.inventory["beamer"] = beamer
-
-        #create locked door
-        porte = Door(name="porte", destination=sphinx, locked=True, key_name="cle")
 
 
         # Create exits for rooms
@@ -85,10 +97,10 @@ class Game:
         question_chambre_cachee.exits = {"D" : chambre_cachee, "E" : egypte_antique, "S" : None, "O" : None}
         chambre_cachee.exits = {"U" : question_chambre_cachee, "E" : None, "S" : None, "O" : None}
         porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None, "N": sphinx}
-        sphinx.exits = {"S" : None, "E" : None, "O" : None, "N" : None}
-        
-    
-        
+        sphinx.exits = {"S" : porte, "E" : None, "O" : None, "N" : None}
+
+
+
         # Setup player and starting room
         history=[]
         self.player = Player(input("\nEntrez votre nom: "),history)
@@ -118,15 +130,12 @@ class Game:
     # revenir à la pièce précédente
     def back(self):
         history=self.player.history
-        if len(history)<2:
+        if len(history)<1:
             print("vous ne pouvez pas revenir en arrière")
         else:
+            self.player.current_room=history[-1]
             history.pop()
-            Player.current_room=history[-1]
-            print(Player.current_room.get_long_description()) 
-
-    def get_inventory(self):
-        return self.player.current_room.get_inventory()
+            print(self.player.current_room.get_long_description()) 
     
     def get_inventory_weight(self):
         total = 0
@@ -143,7 +152,6 @@ class Game:
         if item_name not in current_room.inventory:
             print(f"L'objet '{item_name}' n'est pas dans la pièce.")
             return
-        
         
         # prendre l’item → le retirer de la pièce…
         item = current_room.inventory.pop(item_name)
@@ -177,6 +185,7 @@ class Game:
         print(f"Vous avez déposé {item_name}.")
 
     def check(self):
+     
         return self.player.check()
         
         

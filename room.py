@@ -10,6 +10,7 @@ class Room:
         description (str): the description string.
         exit (dict): next room
         inventory (dict): the items that the room has.
+        characters (dict): the characters that the room has.
 
     Methods:
         __init__(self, name, description) : The constructor.
@@ -34,18 +35,19 @@ class Room:
         self.description = description
         self.exits = {}
         self.inventory = {}
+        self.characters = {}
 
     
      # Define the get_inventory method.
     def get_inventory(self):
-        print(self.inventory)
-        if len(self.inventory) == 0:
+        if not self.inventory and not self.characters:
             return "Il n'y a rien ici."
        
-               
-        result= "La pièce contient:\n"
-        for item in self.inventory.items():
+        result = "Vous voyez :\n"
+        for item in self.inventory.values():
             result += f"- {item}\n"
+        for char in self.characters.values():
+            result += f"- {char}\n"
         return result
 
     # Define the get_exit method.
@@ -56,8 +58,6 @@ class Room:
             return self.exits[direction]
         else:
             return None
-        
-
     
     # Return a string describing the room's exits.
     def get_exit_string(self):
@@ -70,21 +70,5 @@ class Room:
 
     # Return a long description of this room including exits.
     def get_long_description(self):
-        return f"\nVous êtes dans {self.description}\n\n{self.get_exit_string()}\n"
+        return f"\nVous êtes {self.description}\n\n{self.get_exit_string()}\n"
     
- #create locked door
-class Door:
-    def __init__(self, name, destination, locked=True, key_name=None):
-        self.name = name
-        self.destination = destination
-        self.locked = locked
-        self.key_name = key_name  # nom de la clé nécessaire
-
-    def unlock(self, player):
-        if self.key_name in player.inventory:
-            self.locked = False
-            print(" La porte se déverrouille.")
-            return True
-        else:
-            print(" La porte est verrouillée. Il te faut une clé.")
-            return False

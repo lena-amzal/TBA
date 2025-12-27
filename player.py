@@ -1,5 +1,4 @@
 # This file contains the Player class.
-from room import Door
 
 class Player():
     """
@@ -34,7 +33,6 @@ class Player():
         self.history=history
         self.max_weight=10
 
-    
     #Define the get_inventory method.
     def get_inventory(self):
         print(self.inventory)
@@ -46,10 +44,6 @@ class Player():
             result += f"- {item}\n"
         return result
     
-            
-
-        
-
     # Define the move method.
     def move(self, direction):
         # Get the next room from the exits dictionary of the current room.
@@ -60,17 +54,13 @@ class Player():
             print("\nAucune porte dans cette direction !\n")
             return False
         
-        # cas endroit verrouillé
-        if isinstance(destination, Door) and destination.locked:
-            if not destination.unlock(self):
-                return False
-            destination = destination.destination  # accéder à la pièce de destination après le déverrouillage
-        else:  
         # Set the current room to the next room.
-            self.history.append(self.current_room)
-            self.current_room = destination
-            print(self.current_room.get_long_description())
-            return True
+        self.history.append(self.current_room)
+        self.current_room = destination
+        print(self.current_room.get_long_description())
+        return True
+
+
     
 
     
