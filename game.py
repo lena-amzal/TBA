@@ -8,6 +8,8 @@ from command import Command
 from actions import Actions
 from character import Character
 from item import Item
+from quest import Quest, QuestManager
+
 
 class Game:
 
@@ -18,19 +20,24 @@ class Game:
         self.commands = {}
         self.player = None
         self.direction= set() #ensemble des directions valides
-    
-    DEBUG=False
+        self.DEBUG=False
+        
+
+
+
 
     # Setup the game
     def setup(self):
+        
+
 
         # Setup commands
-
+    
         help = Command("help", " : afficher cette aide", Actions.help, 0)
         self.commands["help"] = help
         quit = Command("quit", " : quitter le jeu", Actions.quit, 0)
         self.commands["quit"] = quit
-        go = Command("go", " <direction> : se déplacer dans une direction cardinale (N, E, S, O)", Actions.go, 1)
+        go = Command("go", " <direction> : se déplacer dans une direction cardinale (N, E, S, O, D, U)", Actions.go, 1)
         self.commands["go"] = go
         history=Command("history", ": obtenir l'historique",Actions.history, 0)
         self.commands["history"]=history
@@ -42,19 +49,27 @@ class Game:
         self.commands["take"] = take
         drop = Command("drop", " <item> : déposer un item", Actions.drop, 1)
         self.commands["drop"] = drop
-        check = Command("check", " <item> : vérifier un item dans l'inventaire", Actions.check, 0)
+        check = Command("check", " <item> : vérifier un item dans l'inventaire", Actions.check, 1)
         self.commands["check"] = check
         talk= Command("talk", " <character> : parler à un personnage", Actions.talk, 1)
         self.commands["talk"]=talk
+        use = Command("use", " <item> : utiliser un item de l'inventaire", Actions.use, 1)
+        self.commands["use"] = use
+        self.commands["quests"] = Command("quests", " : afficher la liste des quêtes", Actions.quests, 0)
+        self.commands["quest"] = Command("quest", " <titre> : afficher les détails d'une quête", Actions.quest, 1)
+        self.commands["activate"] = Command("activate", " <titre> : activer une quête", Actions.activate, 1)
+        self.commands["rewards"] = Command("rewards", " : afficher vos récompenses", Actions.rewards, 0)
+        self.commands["answer"] = Command("answer", " <réponse> : répondre à une question posée par un personnage", Actions.answer, 1)
+                                           
+
         
 
 
         # Setup rooms
-
         grotte = Room("Grotte", "Vous êtes dans une grotte, l'air y est humide et froid. Face à vous, l'entrée de la grotte .")
         self.rooms.append(grotte)
-        mammouths = Room("Combat avec un mammouth", " face à un combat opposant un mammouth et un Homme préhistorique.")
-        self.rooms.append(mammouths)
+        terrain_de_chasse = Room("Combat avec un mammouth", " devant un terrain de chasse face à un combat opposant un mammouth et un Homme préhistorique.")
+        self.rooms.append(terrain_de_chasse)
         abri= Room("Grotte du compagnon", "avec votre nouveau compagnon, il vous amène dans sa grotte et vous aide à faire du feu")
         self.rooms.append(abri)
         egypte_antique = Room("couloir dans la pyramide", "dans une pyramide, où la pierre polie reflète faiblement la lumière des torches. L’air est sec et chargé d’une atmosphère mystique, ponctuée par l’écho de tes pas.")
@@ -72,8 +87,9 @@ class Game:
 
         #create npc for rooms
 
-        Varkk= Character("Varkk", " Un homme préhistorique robuste, vêtu de peaux de bêtes, maniant une lance en pierre.", mammouths,["Je m'appelle Varkk.","Voulez-vous venir dans ma grotte ?"])      
-        mammouths.characters["Varkk"] = Varkk
+        Varkk= Character("Varkk", " Un homme préhistorique robuste, vêtu de peaux de bêtes, maniant une lance en pierre.", terrain_de_chasse,["Je m'appelle Varkk.","Voulez-vous venir dans ma grotte ?"])      
+        terrain_de_chasse.characters["Varkk"] = Varkk
+        abri.characters["Varkk"]=Varkk
         Pnj_dynamique=Character("test", " un personnage dynamique qui se déplace entre les pièces.",grotte,["Je suis un personnage qui bouge !"])
         grotte.characters["test"]=Pnj_dynamique
 
@@ -81,18 +97,25 @@ class Game:
         #create items for rooms
 
         lance = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
-        mammouths.inventory["lance"] = lance
+        terrain_de_chasse.inventory["lance"] = lance
+        branche_1 = Item("branche", "une branche sèche", 0.5)
+        abri.inventory["branche"] = branche_1
+        branche_2 = Item("branche", "une branche sèche", 0.5)
+        grotte.inventory["branche"] = branche_2
         cle = Item("cle", "une clé rouillée", 0.1)
         chambre_cachee.inventory["cle"] = cle
+        feu = Item("feu", "un feu crépitant", 0)
+        potion = Item("potion", "une potion de vie qui vous permet de vous soigner", 0.5)
+        grotte.inventory["potion"] = potion
         beamer = Item("beamer", "un beamer futuriste", 1)
         sphinx.inventory["beamer"] = beamer
 
 
         # Create exits for rooms
 
-        grotte.exits = {"N" : mammouths, "E" : None, "S" : None, "O" : None}
-        mammouths.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : None}
-        abri.exits = {"N" : None, "E" : None, "S" : egypte_antique, "O" : None}
+        grotte.exits = {"N" : terrain_de_chasse, "E" : None, "S" : None, "O" : None}
+        terrain_de_chasse.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : None}
+        abri.exits = {"N" : None, "E" : None, "S" : egypte_antique, "O" : terrain_de_chasse}
         egypte_antique.exits = {"D" : porte , "E" : None , "S" : None, "O" : question_chambre_cachee}
         question_chambre_cachee.exits = {"D" : chambre_cachee, "E" : egypte_antique, "S" : None, "O" : None}
         chambre_cachee.exits = {"U" : question_chambre_cachee, "E" : None, "S" : None, "O" : None}
@@ -101,22 +124,27 @@ class Game:
 
 
 
-        # Setup player and starting room
-        history=[]
-        self.player = Player(input("\nEntrez votre nom: "),history)
-        self.player.current_room = grotte
+
+    
+        """Initialize the player."""
+        
+        player_name = input("\nEntrez votre nom: ")
+        self.player = Player(player_name)
+        self.player.current_room = grotte  
+ 
+        # Setup quests
+        self._setup_quests()
 
     # Play the game
     def play(self):
         self.setup()
         self.print_welcome()
-        
         # Loop until the game is finished
         while not self.finished:
             # Get the command from the player
             self.process_command(input("> "))
         return None
-
+    
     # obtenir l'historique des pièces visitées
     def get_history(self):
         history=self.player.history
@@ -138,12 +166,8 @@ class Game:
             print(self.player.current_room.get_long_description()) 
     
     def get_inventory_weight(self):
-        total = 0
-        for item in self.inventory.values():
-            total += item.weight
-        return total
-    
-    
+        current_weight = self.player.get_inventory_weight()
+        
 
     def take(self, item_name):
         current_room = self.player.current_room
@@ -187,10 +211,66 @@ class Game:
     def check(self):
      
         return self.player.check()
-        
-        
+    
+    def _setup_quests(self):
+        """Initialize all quests."""
+        quest_mammouth = Quest(
+            title="Chasseur de Mammouths",
+            description="Un chasseur te défie. Réponds à sa question pour obtenir une lance et vaincre le mammouth..",
+            objectives=["Visite le terrain de chasse","Répondre à la question du chasseur"],
+            reward="lance",
+        )
 
 
+        create_fire = Quest(
+            title="Détenteur de feu",
+            description="Récupere du bois et allume un feu",
+            objectives=["Récupérer une branche de la grotte", "Récupérer une branche de l'abri", "Allumer un feu"],
+            reward="Savoir-faire du feu"
+        )
+
+
+        heal_quest = Quest(
+            title="Détenteur de potion de vie",
+            description="Trouvez la potion de vie en discutant avec votre compagnon.",
+            objectives=["Discuter avec l'homme préhistorique"],
+            reward="potion de vie",
+            trigger_room="Grotte du compagnon"
+        )
+
+
+        # Add quests to player's quest manager
+        self.player.quest_manager.add_quest(quest_mammouth)
+        self.player.quest_manager.add_quest(create_fire)
+        self.player.quest_manager.add_quest(heal_quest)
+        
+    def win(self):
+        quest_manager=self.player.quest_manager
+
+        for quest in quest_manager.quests:
+            if not quest.is_completed:
+                return False
+        return True
+    
+    def loose(self):
+        player=self.player
+        current_room=player.current_room
+        if player.alive==False:
+            return True
+        
+        if current_room == "Combat avec un mammouth":
+            if "lance" not in player.inventory:
+                return True
+        
+        if current_room == "Grotte du compagnon":
+            if "Savoir-faire du feu" not in player.rewards:
+                return True
+        
+        return False
+
+    def trigger_room(self):
+        current_room=self.player.current_room
+        self.player.quest_manager.check_room_triggers(current_room.name)
 
 
     # Process the command entered by the player

@@ -16,8 +16,10 @@ MSG0 = "\nLa commande '{command_word}' ne prend pas de paramètre.\n"
 # The MSG1 variable is used when the command takes 1 parameter.
 MSG1 = "\nLa commande '{command_word}' prend 1 seul paramètre.\n"
 from room import Room
-
+from quest import Quest
+from item import Item
 class Actions:
+
 
     def go(game, list_of_words, number_of_parameters):
         """
@@ -76,6 +78,9 @@ class Actions:
         if direction not in game.direction:
             print(f"Direction '{direction}' non reconnue.")
             return False
+        
+
+
 
         # Tenter déplacement dans la direction choisie
         result = player.move(direction)
@@ -202,6 +207,12 @@ class Actions:
             return False
         item_name = list_of_words[1]
         game.take(item_name)
+        for quest in game.player.quest_manager.active_quests:
+            if "branche" in item_name:
+                if game.player.current_room.name == "Grotte":
+                    quest.complete_objective("Récupérer une branche de la grotte", game.player)
+                elif game.player.current_room.name == "Grotte du compagnon":
+                    quest.complete_objective("Récupérer une branche de l'abri", game.player)
 
     def drop(game, list_of_words, number_of_parameters):
         l=len(list_of_words)
@@ -229,6 +240,49 @@ class Actions:
             print(f"- {item_name}: {item_obj}")
 
         return True
+    
+    def use(game, list_of_words, number_of_parameters):
+        l=len(list_of_words)
+        if l != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            return False
+        item_name = list_of_words[1]
+
+        #utiliser la lance pour vaincre le mammouth
+        if item_name == "Lance préhistorique" and game.player.current_room == "Combat avec un mammouth":
+            print("🦣 Vous avez vaincu le mammouth avec votre lance préhistorique !")
+            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Chasseur de Mammouths"), None)
+            if quest:
+                quest.complete_objective("Visite le terrain de chasse", game.player)
+                quest.complete_objective("Répondre à la question du chasseur", game.player)
+                if quest.is_completed():
+                    print(f"🎉 Vous avez complété la quête '{quest.title}'!")
+                    varkk = game.player.current_room.characters.get("Varkk")
+                    if varkk:
+                        del game.player.current_room.characters["Varkk"]
+                        game.player.current_room = game.rooms["Abri du compagnon"]
+                        game.player.current_room.characters["Varkk"] = varkk
+                    
+            return True
+        
+        #utiliser la branche pour allumer un feu
+        if item_name == "branche":
+            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Détenteur de feu"), None)
+            if (
+            "Récupérer une branche de la grotte" in quest.completed_objectives and
+            "Récupérer une branche de l'abri" in quest.completed_objectives
+            ):
+                print("🔥 Vous utilisez les branches pour allumer un feu.   ")
+
+                quest.complete_objective("Allumer un feu", game.player)
+
+                if quest.reward:
+                    game.player.add_reward(quest.reward)
+                    game.player.inventory["feu"] = Item("feu", "un feu crépitant", 0)
+                    if "branche" in game.player.inventory:
+                        del game.player.inventory["branche"]
+        return True
 
     def talk(game, list_of_words, number_of_parameters):
         l=len(list_of_words)
@@ -243,7 +297,307 @@ class Actions:
 
         npc = game.player.current_room.characters[npc_name]
         npc.get_msg()
+        
+        for quest in game.player.quest_manager.active_quests:
+            if quest.title == "Détenteur de potion de vie" and npc_name == "Varkk":
+                if quest.complete_objective("Discuter avec l'homme préhistorique", game.player):
+                    # Crée et donne la potion
+                    potion = Item("potion", "une potion de vie qui vous permet de vous soigner", 0.5)
+                    game.player.inventory["potion"] = potion
+                    print("🧪 Varkk vous donne une potion de vie et vous l'offre.")
+                    if quest.is_completed:
+                        print(f"🎉 Vous avez complété la quête '{quest.title}' et gagné la récompense : {quest.reward} !")
+                        game.player.add_reward(quest.reward)
+
         return True
+        
+    
+    @staticmethod
+    def quests(game, list_of_words, number_of_parameters):
+        """
+        Show all quests and their status.
+        
+        Args:
+            game (Game): The game object.
+            list_of_words (list): The list of words in the command.
+            number_of_parameters (int): The number of parameters expected by the command.
+
+        Returns:
+            bool: True if the command was executed successfully, False otherwise.
+
+        Examples:
+
+        >>> from game import Game
+        >>> game = Game()
+        >>> game.setup("TestPlayer")
+        >>> Actions.quests(game, ["quests"], 0)
+        <BLANKLINE>
+        📋 Liste des quêtes:
+          ❓ Grand Explorateur (Non activée)
+          ❓ Grand Voyageur (Non activée)
+          ❓ Découvreur de Secrets (Non activée)
+        <BLANKLINE>
+        True
+        >>> Actions.quests(game, ["quests", "param"], 0)
+        <BLANKLINE>
+        La commande 'quests' ne prend pas de paramètre.
+        <BLANKLINE>
+        False
+
+        """
+        # If the number of parameters is incorrect, print an error message and return False.
+        n = len(list_of_words)
+        if n != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            return False
+
+        # Show all quests
+        game.player.quest_manager.show_quests()
+        return True
+
+
+    @staticmethod
+    def quest(game, list_of_words, number_of_parameters):
+        """
+        Show details about a specific quest.
+        
+        Args:
+            game (Game): The game object.
+            list_of_words (list): The list of words in the command.
+            number_of_parameters (int): The number of parameters expected by the command.
+
+        Returns:
+            bool: True if the command was executed successfully, False otherwise.
+
+        Examples:
+
+        >>> from game import Game
+        >>> game = Game()
+        >>> game.setup("TestPlayer")
+        >>> Actions.quest(game, ["quest", "Grand", "Voyageur"], 1)
+        <BLANKLINE>
+        📋 Quête: Grand Voyageur
+        📖 Déplacez-vous 10 fois entre les lieux.
+        <BLANKLINE>
+        Objectifs:
+          ⬜ Se déplacer 10 fois (Progression: 0/10)
+        <BLANKLINE>
+        🎁 Récompense: Bottes de voyageur
+        <BLANKLINE>
+        True
+        >>> Actions.quest(game, ["quest"], 1)
+        <BLANKLINE>
+        La commande 'quest' prend 1 seul paramètre.
+        <BLANKLINE>
+        False
+
+        """
+        # If the number of parameters is incorrect, print an error message and return False.
+        n = len(list_of_words)
+        if n < number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG1.format(command_word=command_word))
+            return False
+
+        # Get the quest title from the list of words (join all words after command)
+        quest_title = " ".join(list_of_words[1:])
+
+        # Prepare current counter values to show progress
+        current_counts = {
+            "Se déplacer": game.player.move_count
+        }
+
+        # Show quest details
+        game.player.quest_manager.show_quest_details(quest_title, current_counts)
+        return True
+
+
+    @staticmethod
+    def activate(game, list_of_words, number_of_parameters):
+        """
+        Activate a specific quest.
+        
+        Args:
+            game (Game): The game object.
+            list_of_words (list): The list of words in the command.
+            number_of_parameters (int): The number of parameters expected by the command.
+
+        Returns:
+            bool: True if the command was executed successfully, False otherwise.
+
+        Examples:
+
+        >>> from game import Game
+        >>> game = Game()
+        >>> game.setup("TestPlayer")
+        >>> Actions.activate(game, ["activate", "Grand", "Voyageur"], 1) # doctest: +ELLIPSIS
+        <BLANKLINE>
+        🗡️  Nouvelle quête activée: Grand Voyageur
+        📝 Déplacez-vous 10 fois entre les lieux.
+        <BLANKLINE>
+        True
+        >>> Actions.activate(game, ["activate"], 1)
+        <BLANKLINE>
+        La commande 'activate' prend 1 seul paramètre.
+        <BLANKLINE>
+        False
+
+        """
+        # If the number of parameters is incorrect, print an error message and return False.
+        n = len(list_of_words)
+        if n < number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG1.format(command_word=command_word))
+            return False
+
+        # Get the quest title from the list of words (join all words after command)
+        quest_title = " ".join(list_of_words[1:])
+
+        # Try to activate the quest
+        if game.player.quest_manager.activate_quest(quest_title):
+            return True
+
+        msg1 = f"\nImpossible d'activer la quête '{quest_title}'. "
+        msg2 = "Vérifiez le nom ou si elle n'est pas déjà active.\n"
+        print(msg1 + msg2)
+        # print(f"\nImpossible d'activer la quête '{quest_title}'. \
+        #             Vérifiez le nom ou si elle n'est pas déjà active.\n")
+        return False
+
+
+    @staticmethod
+    def rewards(game, list_of_words, number_of_parameters):
+        """
+        Display all rewards earned by the player.
+        
+        Args:
+            game (Game): The game object.
+            list_of_words (list): The list of words in the command.
+            number_of_parameters (int): The number of parameters expected by the command.
+
+        Returns:
+            bool: True if the command was executed successfully, False otherwise.
+
+        Examples:
+
+        >>> from game import Game
+        >>> game = Game()
+        >>> game.setup("TestPlayer")
+        >>> Actions.rewards(game, ["rewards"], 0)
+        <BLANKLINE>
+        🎁 Aucune récompense obtenue pour le moment.
+        <BLANKLINE>
+        True
+        >>> Actions.rewards(game, ["rewards", "param"], 0)
+        <BLANKLINE>
+        La commande 'rewards' ne prend pas de paramètre.
+        <BLANKLINE>
+        False
+        """
+        # If the number of parameters is incorrect, print an error message and return False.
+        n = len(list_of_words)
+        if n != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            return False
+
+        # Show all rewards
+        game.player.show_rewards()
+        return True
+
+    def answer(game, parameters, number_of_parameters):
+        if len(parameters) < 2:
+            print("❌ Utilisation : answer <ta réponse>")
+            return
+    
+        quest = game.player.quest_manager.get_quest_by_title("Chasseur de Mammouths")
+    
+        if not quest or not quest.is_active:
+            print("❌ Aucune quête active liée à cette question.")
+            return
+        try:
+            user_answer = int(parameters[1])
+        except ValueError:
+            print("❌ Réponse invalide. Donne un nombre.")
+            return
+        
+        bonne_reponse = 7
+
+        if not hasattr(quest, "errors"):
+            quest.errors = 0
+
+        if user_answer == bonne_reponse:
+            print("✅ Bonne réponse ! Vark te donne une lance 🏹")
+            # Donner réellement l'item
+            lance = Item("Lance préhistorique", "une lance faite de bois et de pierre", 2)
+            game.player.inventory["lance"] = lance
+
+            quest.complete_objective("Répondre à la question du chasseur", game.player)
+
+        else:
+            quest.errors += 1
+            remaining = 3 - quest.errors
+
+            if remaining > 0:
+                print(f"❌ Mauvaise réponse. Il te reste {remaining} tentative(s).")
+                print("💡 Indice : en dessous de 8")
+            else:
+                print("💀 Tu as échoué trop de fois.")
+                game.player.is_alive = False
+                print("☠️ Tu es mort.")
+        
+        """
+        quest = game.quest_manager.get_active_quest_by_title("Chasseur de Mammouths")
+
+        if not quest or not quest.is_active:
+            print("❌ Aucune quête active liée à cette question.")
+            return False
+        
+        if not hasattr(quest, "errors"):
+            quest.errors = 0
+
+        bonne_reponse = 7
+        max_errors = 3
+
+        try:
+            answer = int(answer)
+        except ValueError:
+            print("❌ Réponse invalide. Donne un nombre.")
+            return False
+    
+        # ✅ Bonne réponse
+        if answer == bonne_reponse:
+            print("✅ Bonne réponse !")
+            print("🏹 Le chasseur te donne une lance faite de bois et de pierre.")
+
+        game.player.add_reward("Lance préhistorique")
+        quest.complete_objective("Répondre à la question du chasseur", game.player)
+        return True
+    
+        # ❌ Mauvaise réponse
+        quest.errors += 1
+        remaining = max_errors - quest.errors
+
+        if remaining > 0:
+            print(f"❌ Mauvaise réponse. Il te reste {remaining} tentative(s).")
+        if quest.errors == 1:
+            print("💡 Indice : en dessous de 8")
+        else:
+            print("💀 Tu as échoué trop de fois.")
+            print("🦣 Le mammouth te piétine.")
+            game.player.is_alive = False
+            print("☠️ Tu es mort.")
+        return False
+        
+        print("🧠 Question : Quel est le poids moyen d’un mammouth (en tonnes) ?")
+        
+        bonne_réponse = "7"
+        """
+        
+        
+
+    
 
         
     
