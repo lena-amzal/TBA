@@ -35,17 +35,17 @@ class Character():
         self.name = name
         self.description = description
         self.current_room = current_room
-        self.msgs=msgs
+        self.msgs = msgs
 
     def __str__(self):
         return f"{self.name}:{self.description}\n"
     
     def move(self):
         L=["se déplace","reste"]
-        move_choice=random.choice(L)
-        if move_choice=="se déplace":
+        move_choice = random.choice(L)
+        if move_choice =="se déplace":
             if self.current_room.exits:
-                room_choice=[room for room in self.current_room.exits.values() if room is not None]
+                room_choice = [room for room in self.current_room.exits.values() if room is not None]
                 # Retirer de l'ancienne pièce
                 del self.current_room.characters[self.name]
                 # Changer de pièce
@@ -57,8 +57,20 @@ class Character():
             return False        
     
     def get_msg(self):
-        msg_supp=self.msgs.pop(0)
-        print(msg_supp)
-        self.msgs.append(msg_supp)
+        # if the character has the same messages for all rooms
+        if isinstance(self.msgs, list):
+            msg_supp = self.msgs.pop(0)
+            print(msg_supp)
+            self.msgs.append(msg_supp)
+        else:
+            # if the character has different messages for different rooms
+            current_room = self.current_room
+            if current_room in self.msgs:
+                msgs = self.msgs[current_room]
+                msg_supp = msgs.pop(0)
+                print(msg_supp)
+                msgs.append(msg_supp)
+            else:
+                print(f"{self.name} n'a rien à dire dans cette pièce.")
     
 

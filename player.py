@@ -53,6 +53,7 @@ class Player():
             result += f"- {item}\n"
         return result
     
+    
     # Check room visit objectives
         self.quest_manager.check_room_objectives(self.current_room.name)
 
@@ -150,6 +151,8 @@ class Player():
         self.history.append(self.current_room)
         self.current_room = destination
         print(self.current_room.get_long_description())
+      
+
         return True
 
 

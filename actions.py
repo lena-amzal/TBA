@@ -78,21 +78,41 @@ class Actions:
         if direction not in game.direction:
             print(f"Direction '{direction}' non reconnue.")
             return False
-        
-
-
+        old_room = player.current_room
 
         # Tenter déplacement dans la direction choisie
         result = player.move(direction)
-        current_room = game.player.current_room
-        # Move all characters in all rooms
-        current_room= game.player.current_room
+        current_room = player.current_room
+
+        # Move Shana to follow the player
+        if current_room is not None and game.Shana is not None:
+            del old_room.characters["Shana"]
+            current_room.characters["Shana"] = game.Shana
+            game.Shana.current_room = current_room
+
+        # Move Varkk if first quest completed
+        quest = game.player.quest_manager.get_quest_by_title("Chasseur de Mammouths")
+        abri = game.rooms[2]
+        print(f"DEBUG: Quest completed: {quest.is_completed if quest else 'Quest not found'}")
+        print(f"DEBUG: Varkk in old_room: {'Varkk' in old_room.characters}")
+        print(f"DEBUG: current_room == abri: {current_room == abri}")
+        if quest and quest.is_completed:
+            if "Varkk" in old_room.characters and current_room == abri:
+                del old_room.characters["Varkk"]
+                abri.characters["Varkk"] = game.Varkk
+                game.Varkk.current_room = abri
+                print("DEBUG: Varkk moved to abri")
+
+        # Move some characters randomly
         character = list(current_room.characters.keys())
         for char_name in character:
-            char = current_room.characters[char_name]
-            char.move() 
-        # player.move devrait gérer si le déplacement est impossible (pas de sortie)
+            if char_name not in ["Varkk", "Shana"]:
+                char = current_room.characters[char_name]
+                char.move() 
         game.get_history()
+
+          # Check room visit objectives
+        game.player.quest_manager.check_room_objectives(current_room.name)
         return result
     
 
@@ -256,13 +276,6 @@ class Actions:
             if quest:
                 quest.complete_objective("Visite le terrain de chasse", game.player)
                 quest.complete_objective("Répondre à la question du chasseur", game.player)
-                if quest.is_completed():
-                    print(f"🎉 Vous avez complété la quête '{quest.title}'!")
-                    varkk = game.player.current_room.characters.get("Varkk")
-                    if varkk:
-                        del game.player.current_room.characters["Varkk"]
-                        game.player.current_room = game.rooms["Abri du compagnon"]
-                        game.player.current_room.characters["Varkk"] = varkk
                     
             return True
         
@@ -290,28 +303,21 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        npc_name = list_of_words[1]
+        # Check if the NPC is in the current room
+        npc_name = list_of_words[1].capitalize()
         if npc_name not in game.player.current_room.characters:
             print(f"Il n'y a personne nommé '{npc_name}' ici.")
             return False
-
+        # Display the message from the NPC
         npc = game.player.current_room.characters[npc_name]
         npc.get_msg()
+        # Check quest objectives related to talking to NPCs
+        for char_name in game.player.current_room.characters:
+            game.player.quest_manager.check_action_objectives("Parler à",char_name)
+            game.quest.complete_objective("Parler à ", char_name)
+            return True
         
-        for quest in game.player.quest_manager.active_quests:
-            if quest.title == "Détenteur de potion de vie" and npc_name == "Varkk":
-                if quest.complete_objective("Discuter avec l'homme préhistorique", game.player):
-                    # Crée et donne la potion
-                    potion = Item("potion", "une potion de vie qui vous permet de vous soigner", 0.5)
-                    game.player.inventory["potion"] = potion
-                    print("🧪 Varkk vous donne une potion de vie et vous l'offre.")
-                    if quest.is_completed:
-                        print(f"🎉 Vous avez complété la quête '{quest.title}' et gagné la récompense : {quest.reward} !")
-                        game.player.add_reward(quest.reward)
 
-        return True
-        
-    
     @staticmethod
     def quests(game, list_of_words, number_of_parameters):
         """
@@ -528,12 +534,7 @@ class Actions:
             quest.errors = 0
 
         if user_answer == bonne_reponse:
-            print("✅ Bonne réponse ! Vark te donne une lance 🏹")
-            # Donner réellement l'item
-            lance = Item("Lance préhistorique", "une lance faite de bois et de pierre", 2)
-            game.player.inventory["lance"] = lance
-
-            quest.complete_objective("Répondre à la question du chasseur", game.player)
+            game.player.quest_manager.check_action_objectives("Répondre à", "Varkk")
 
         else:
             quest.errors += 1

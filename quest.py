@@ -290,7 +290,7 @@ class Quest:
         ]
 
         for objective in room_objectives:
-            if self.complete_objective(objective, player):
+             if self.complete_objective(objective, player):
                 return True
         return False
 
@@ -324,7 +324,8 @@ class Quest:
                 f"{action} {target}",
                 f"{action} avec {target}",
                 f"{action} le {target}",
-                f"{action} la {target}"
+                f"{action} la {target}",
+                f"{action} à {target}"
             ]
         else:
             objective_variations = [action]
@@ -476,9 +477,11 @@ class QuestManager:
         """
         for quest in self.quests:
             if quest.title == quest_title and not quest.is_active:
-                quest.activate()
-                self.active_quests.append(quest)
-                return True
+                if quest.trigger_room and self.player.current_room.name!=quest.trigger_room:
+                    print(f"\n❗ Vous ne pouvez pas activer cette quête ici. Allez à '{quest.trigger_room}' pour l'activer.\n")
+                    quest.activate()
+                    self.active_quests.append(quest)
+                    return True
         return False
 
 

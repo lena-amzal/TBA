@@ -19,6 +19,7 @@ class Game:
         self.rooms = []
         self.commands = {}
         self.player = None
+        self.Shana=None
         self.direction= set() #ensemble des directions valides
         self.DEBUG=False
         
@@ -39,7 +40,7 @@ class Game:
         self.commands["quit"] = quit
         go = Command("go", " <direction> : se déplacer dans une direction cardinale (N, E, S, O, D, U)", Actions.go, 1)
         self.commands["go"] = go
-        history=Command("history", ": obtenir l'historique",Actions.history, 0)
+        history = Command("history", ": obtenir l'historique",Actions.history, 0)
         self.commands["history"]=history
         back=Command("back",":revenir à la pièce précédente",Actions.back,0)
         self.commands["back"]=back
@@ -51,7 +52,7 @@ class Game:
         self.commands["drop"] = drop
         check = Command("check", " <item> : vérifier un item dans l'inventaire", Actions.check, 1)
         self.commands["check"] = check
-        talk= Command("talk", " <character> : parler à un personnage", Actions.talk, 1)
+        talk = Command("talk", " <character> : parler à un personnage", Actions.talk, 1)
         self.commands["talk"]=talk
         use = Command("use", " <item> : utiliser un item de l'inventaire", Actions.use, 1)
         self.commands["use"] = use
@@ -62,13 +63,10 @@ class Game:
         self.commands["answer"] = Command("answer", " <réponse> : répondre à une question posée par un personnage", Actions.answer, 1)
                                            
 
-        
-
-
         # Setup rooms
-        grotte = Room("Grotte", "Vous êtes dans une grotte, l'air y est humide et froid. Face à vous, l'entrée de la grotte .")
+        grotte = Room("Grotte", "Vos paupières s'ouvrent sur l'obscurité moite d'une grotte au froid ancestral. L'air est lourd, saturé d'humidité. Près de la sortie, la silhouette d'une jeune femme, se découpe contre la lumière du jour, scrutant nerveusement l'immensité sauvage au-dehors.")
         self.rooms.append(grotte)
-        terrain_de_chasse = Room("Combat avec un mammouth", " devant un terrain de chasse face à un combat opposant un mammouth et un Homme préhistorique.")
+        terrain_de_chasse = Room("terrain de chasse", " devant un terrain de chasse face à un combat opposant un mammouth et un Homme préhistorique.")
         self.rooms.append(terrain_de_chasse)
         abri= Room("Grotte du compagnon", "avec votre nouveau compagnon, il vous amène dans sa grotte et vous aide à faire du feu")
         self.rooms.append(abri)
@@ -83,19 +81,23 @@ class Game:
         sphinx = Room("Sphinx", " devant la créature sphinx")
         self.rooms.append(sphinx)
 
+    
+        # Create messages for npcs
+        msg_varkk={terrain_de_chasse : ["Je m'appelle Varkk.","Voulez-vous venir dans ma grotte ?"], 
+                   abri : ["Etranger, écoute les paroles de Varkk. Mon peuple parcourt ces terres depuis que les montagnes sont nées. Le froid et les bêtes géantes nous ont tout pris, mais nous avons appris à écouter la terre. Sous la neige, ma grand-mère trouvait des racines de feu et des baies de sang. En les mélangeant dans un crâne de bison, elle créait un liquide capable de refermer les plaies les plus profondes.Tu as prouvé ton courage. Je ne peux pas t'accompagner plus loin, mais je te donne ceci : notre secret. C'est une potion de vie. Bois-la quand ton souffle deviendra court, et la force de la terre reviendra en toi."]}
+        msg_shana={grotte: ["Tu te réveilles enfin ! Cela fait un moment que tu es inconscient."],
+                   terrain_de_chasse:["Nous devons aider cet homme préhistorique à vaincre le mammouth."]}
+        
+        # Create npc for rooms
+        self.Varkk = Character("Varkk", " Un homme préhistorique robuste, vêtu de peaux de bêtes, maniant une lance en pierre.", terrain_de_chasse, msg_varkk)      
+        terrain_de_chasse.characters["Varkk"] = self.Varkk
+        
+        self.Shana =Character("Shana", " une personne se retrouvant dans le même monde que vous", grotte, msg_shana)
+        grotte.characters["Shana"]=self.Shana 
+                
 
 
-        #create npc for rooms
-
-        Varkk= Character("Varkk", " Un homme préhistorique robuste, vêtu de peaux de bêtes, maniant une lance en pierre.", terrain_de_chasse,["Je m'appelle Varkk.","Voulez-vous venir dans ma grotte ?"])      
-        terrain_de_chasse.characters["Varkk"] = Varkk
-        abri.characters["Varkk"]=Varkk
-        Pnj_dynamique=Character("test", " un personnage dynamique qui se déplace entre les pièces.",grotte,["Je suis un personnage qui bouge !"])
-        grotte.characters["test"]=Pnj_dynamique
-
-
-        #create items for rooms
-
+        # Create items for rooms
         lance = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
         terrain_de_chasse.inventory["lance"] = lance
         branche_1 = Item("branche", "une branche sèche", 0.5)
@@ -106,7 +108,7 @@ class Game:
         chambre_cachee.inventory["cle"] = cle
         feu = Item("feu", "un feu crépitant", 0)
         potion = Item("potion", "une potion de vie qui vous permet de vous soigner", 0.5)
-        grotte.inventory["potion"] = potion
+        abri.inventory["potion"] = potion
         beamer = Item("beamer", "un beamer futuriste", 1)
         sphinx.inventory["beamer"] = beamer
 
@@ -135,6 +137,8 @@ class Game:
         # Setup quests
         self._setup_quests()
 
+        
+
     # Play the game
     def play(self):
         self.setup()
@@ -144,6 +148,7 @@ class Game:
             # Get the command from the player
             self.process_command(input("> "))
         return None
+    
     
     # obtenir l'historique des pièces visitées
     def get_history(self):
@@ -217,8 +222,9 @@ class Game:
         quest_mammouth = Quest(
             title="Chasseur de Mammouths",
             description="Un chasseur te défie. Réponds à sa question pour obtenir une lance et vaincre le mammouth..",
-            objectives=["Visite le terrain de chasse","Répondre à la question du chasseur"],
+            objectives=["Répondre à Varkk"],
             reward="lance",
+            trigger_room="terrain de chasse"
         )
 
 
@@ -233,7 +239,7 @@ class Game:
         heal_quest = Quest(
             title="Détenteur de potion de vie",
             description="Trouvez la potion de vie en discutant avec votre compagnon.",
-            objectives=["Discuter avec l'homme préhistorique"],
+            objectives=["Parler à Varkk"],
             reward="potion de vie",
             trigger_room="Grotte du compagnon"
         )
@@ -296,6 +302,8 @@ class Game:
         else:
             command = self.commands[command_word]
             command.action(self, list_of_words, command.number_of_parameters)
+            # Vérifier les déclencheurs de quêtes basés sur la pièce actuelle
+            self.trigger_room()
 
 
     # Print the welcome message
