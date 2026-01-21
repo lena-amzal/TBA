@@ -38,14 +38,15 @@ class Room:
         self.characters = {}
 
     
-     # Define the get_inventory method.
+    # Define the get_inventory method.
     def get_inventory(self):
         if not self.inventory and not self.characters:
-            return "Il n'y a rien ici."
+            return "Rien ni personne à l’horizon."
        
         result = "Vous voyez :\n"
         for item in self.inventory.values():
             result += f"- {item}\n"
+        result+="\n"
         for char in self.characters.values():
             result += f"- {char}\n"
         return result

@@ -46,6 +46,7 @@ class Actions:
         >>> go(game, ["go"], 1)
         False
 
+
         """
         
         player = game.player
@@ -55,22 +56,10 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-
-        direction_map = {
-            "N": "N", "NORD": "N", "Nord": "N", "nord": "N",
-            "S": "S", "SUD": "S", "Sud": "S", "sud": "S",
-            "E": "E", "EST": "E", "Est": "E", "est": "E",
-            "O": "O", "OUEST": "O", "Ouest": "O", "ouest": "O",
-            "U": "U", "UP": "U", "Up": "U", "up": "U",
-            "D": "D", "DOWN": "D", "Down": "D", "down": "D"
-        }
-
-        dir_input = list_of_words[1]
-        # Try exact match first, then uppercase form to be case-insensitive.
-        direction = direction_map.get(dir_input) or direction_map.get(dir_input.upper())
-
+        
+        direction = list_of_words[1][0].upper()
         if direction is None:
-            print(f"Direction '{dir_input}' non reconnue.")
+            print(f"Direction '{direction}' non reconnue.")
             print(game.player.current_room.get_long_description())  # Affiche la salle actuelle
             return False
 
@@ -90,18 +79,14 @@ class Actions:
             current_room.characters["Shana"] = game.Shana
             game.Shana.current_room = current_room
 
-        # Move Varkk if first quest completed
+        # Move Varkk if second quest completed
         quest = game.player.quest_manager.get_quest_by_title("Chasseur de Mammouths")
         abri = game.rooms[2]
-        print(f"DEBUG: Quest completed: {quest.is_completed if quest else 'Quest not found'}")
-        print(f"DEBUG: Varkk in old_room: {'Varkk' in old_room.characters}")
-        print(f"DEBUG: current_room == abri: {current_room == abri}")
         if quest and quest.is_completed:
             if "Varkk" in old_room.characters and current_room == abri:
                 del old_room.characters["Varkk"]
                 abri.characters["Varkk"] = game.Varkk
                 game.Varkk.current_room = abri
-                print("DEBUG: Varkk moved to abri")
 
         # Move some characters randomly
         character = list(current_room.characters.keys())
@@ -109,9 +94,12 @@ class Actions:
             if char_name not in ["Varkk", "Shana"]:
                 char = current_room.characters[char_name]
                 char.move() 
-        game.get_history()
+        player.get_history()
 
-          # Check room visit objectives
+        # Trigger room-based quests
+        game.trigger_room()
+
+        # Check room visit objectives
         game.player.quest_manager.check_room_objectives(current_room.name)
         return result
     
@@ -192,21 +180,39 @@ class Actions:
         return True
 
     def history(game, list_of_words, number_of_parameters):
-        l=len(list_of_words)
+        l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        game.get_history()
+        
+        # Display the player's room visit history
+        print(game.player.get_history())
         return True
     
     def back (game, list_of_words, number_of_parameters):
-        l=len(list_of_words)
+        l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        game.back()
+        
+        # Go back to the previous room in history
+        if not game.player.history:
+            print("Vous êtes de retour à votre point de départ")
+            return False
+        else:
+           
+            previous_room = game.player.history.pop()
+            old_room = game.player.current_room
+            game.player.current_room = previous_room
+            current_room = game.player.current_room
+            print(f"Vous êtes retourné à la pièce : {previous_room.name}")
+            print(previous_room.get_long_description())
+            if game.Shana is not None:
+                del old_room.characters["Shana"]
+                current_room.characters["Shana"] = game.Shana
+                game.Shana.current_room = current_room
         return True
     
     def look(game, list_of_words, number_of_parameters):
@@ -215,68 +221,100 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
+        
+        # Display the current room's long description and inventory
         print(game.player.current_room.get_long_description())
         print(game.player.current_room.get_inventory())
         return True
 
     def take(game, list_of_words, number_of_parameters):
-        l=len(list_of_words)
+        l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
-            print(MSG0.format(command_word=command_word))
+            print(MSG1.format(command_word=command_word))
             return False
+        
+        # Take the item if it is in the room
         item_name = list_of_words[1]
-        game.take(item_name)
+        if item_name not in game.player.current_room.inventory.keys():
+            print(f"L'objet '{item_name}' n'est pas dans la pièce.")
+            return False
+        else :
+            item= game.player.current_room.inventory[item_name]
+            if item_name not in game.player.inventory:
+                game.player.inventory[item_name]=[item]
+            else:
+                game.player.inventory[item_name].append(item)
+            del game.player.current_room.inventory[item_name]
+            print(f"Vous avez pris '{item_name}'.")
+        
+        # Check quest objectives related to taking items
         for quest in game.player.quest_manager.active_quests:
-            if "branche" in item_name:
-                if game.player.current_room.name == "Grotte":
-                    quest.complete_objective("Récupérer une branche de la grotte", game.player)
-                elif game.player.current_room.name == "Grotte du compagnon":
-                    quest.complete_objective("Récupérer une branche de l'abri", game.player)
+            for objective in quest.objectives:
+                words=objective.split(" ")
+                counter_name="".join(words[2:])
+                current_count= len(game.player.inventory.get(item_name))
+                game.player.quest_manager.check_counter_objectives(counter_name, current_count)
 
     def drop(game, list_of_words, number_of_parameters):
-        l=len(list_of_words)
+        l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
-            print(MSG0.format(command_word=command_word))
+            print(MSG1.format(command_word=command_word))
             return False
+        
+        # Drop the item if it is in the inventory
         item_name = list_of_words[1]
-        game.drop(item_name)
+        if item_name not in game.player.inventory:
+            print(f"Vous n'avez pas '{item_name}' dans votre inventaire.")
+            return False
+        else :
+            item = game.player.inventory[item_name].pop()
+            if len( game.player.inventory[item_name]) == 0:
+                del game.player.inventory[item_name]
+            game.player.current_room.inventory[item_name] = item
+            print(f"Vous avez déposé '{item_name}'.")
 
     def check(game, list_of_words, number_of_parameters):
         l=len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
-            print(MSG0.format(command_word=command_word))
+            print(MSG1.format(command_word=command_word))
             return False
-        inventory=game.player.inventory
-
-        if len(inventory) == 0:
-            print("Votre inventaire est vide.")
-            return True
         
-        print("Vous disposez des items suivants :")
-        for item_name, item_obj in inventory.items():
-            print(f"- {item_name}: {item_obj}")
-
+        # Display the player's inventory
+        print(game.player.get_inventory())
         return True
     
     def use(game, list_of_words, number_of_parameters):
         l=len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
-            print(MSG0.format(command_word=command_word))
+            print(MSG1.format(command_word=command_word))
             return False
+        # Use the item if it is in the inventory
         item_name = list_of_words[1]
+        if item_name not in game.player.inventory:
+            print(f"Vous n'avez pas '{item_name}' dans votre inventaire.")
+            return False
+        else :
+            print(f"Vous utilisez '{item_name}'.")
 
-        #utiliser la lance pour vaincre le mammouth
-        if item_name == "Lance préhistorique" and game.player.current_room == "Combat avec un mammouth":
+        # Check quest objectives related to using items
+        for quest in game.player.quest_manager.active_quests:
+            for objective in quest.objectives:
+                words=objective.split(" ")
+                action=words[0]
+                game.player.quest_manager.check_action_objectives(action, item_name)
+
+
+        """if item_name == "Lance préhistorique" and game.player.current_room == "Combat avec un mammouth":
             print("🦣 Vous avez vaincu le mammouth avec votre lance préhistorique !")
             quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Chasseur de Mammouths"), None)
             if quest:
-                quest.complete_objective("Visite le terrain de chasse", game.player)
+                quest.complete_objective("Visiter le terrain de chasse", game.player)
                 quest.complete_objective("Répondre à la question du chasseur", game.player)
-                    
+
             return True
         
         #utiliser la branche pour allumer un feu
@@ -294,28 +332,29 @@ class Actions:
                     game.player.add_reward(quest.reward)
                     game.player.inventory["feu"] = Item("feu", "un feu crépitant", 0)
                     if "branche" in game.player.inventory:
-                        del game.player.inventory["branche"]
+                        del game.player.inventory["branche"]"""
         return True
 
     def talk(game, list_of_words, number_of_parameters):
         l=len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
-            print(MSG0.format(command_word=command_word))
+            print(MSG1.format(command_word=command_word))
             return False
+        
         # Check if the NPC is in the current room
         npc_name = list_of_words[1].capitalize()
         if npc_name not in game.player.current_room.characters:
             print(f"Il n'y a personne nommé '{npc_name}' ici.")
             return False
+        
         # Display the message from the NPC
         npc = game.player.current_room.characters[npc_name]
         npc.get_msg()
+
         # Check quest objectives related to talking to NPCs
-        for char_name in game.player.current_room.characters:
-            game.player.quest_manager.check_action_objectives("Parler à",char_name)
-            game.quest.complete_objective("Parler à ", char_name)
-            return True
+        game.player.quest_manager.check_action_objectives("Parler à", npc_name)
+        return True
         
 
     @staticmethod
@@ -507,27 +546,33 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-
+        
         # Show all rewards
         game.player.show_rewards()
         return True
 
-    def answer(game, parameters, number_of_parameters):
-        if len(parameters) < 2:
+    def answer(game, list_of_words, number_of_parameters):
+        # If the number of parameters is incorrect, print an error message and return False.
+        n = len(list_of_words)
+        if n != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG1.format(command_word=command_word))
+            return False
+        
+        if len(list_of_words) < 2:
             print("❌ Utilisation : answer <ta réponse>")
             return
     
-        quest = game.player.quest_manager.get_quest_by_title("Chasseur de Mammouths")
+        quest = game.player.quest_manager.get_quest_by_title("Le Mammouth I")
     
         if not quest or not quest.is_active:
             print("❌ Aucune quête active liée à cette question.")
             return
         try:
-            user_answer = int(parameters[1])
+            user_answer = int(list_of_words[1])
         except ValueError:
             print("❌ Réponse invalide. Donne un nombre.")
             return
-        
         bonne_reponse = 7
 
         if not hasattr(quest, "errors"):

@@ -8,7 +8,7 @@ from command import Command
 from actions import Actions
 from character import Character
 from item import Item
-from quest import Quest, QuestManager
+from quest import Quest
 
 
 class Game:
@@ -22,27 +22,21 @@ class Game:
         self.Shana=None
         self.direction= set() #ensemble des directions valides
         self.DEBUG=False
-        
-
 
 
 
     # Setup the game
     def setup(self):
-        
-
-
         # Setup commands
-    
         help = Command("help", " : afficher cette aide", Actions.help, 0)
         self.commands["help"] = help
         quit = Command("quit", " : quitter le jeu", Actions.quit, 0)
         self.commands["quit"] = quit
         go = Command("go", " <direction> : se déplacer dans une direction cardinale (N, E, S, O, D, U)", Actions.go, 1)
         self.commands["go"] = go
-        history = Command("history", ": obtenir l'historique",Actions.history, 0)
+        history = Command("history", " : obtenir l'historique",Actions.history, 0)
         self.commands["history"]=history
-        back=Command("back",":revenir à la pièce précédente",Actions.back,0)
+        back=Command("back"," : revenir à la pièce précédente",Actions.back,0)
         self.commands["back"]=back
         look = Command("look", " : décrire l'environnement actuel et les items", Actions.look, 0)
         self.commands["look"] = look
@@ -62,13 +56,12 @@ class Game:
         self.commands["rewards"] = Command("rewards", " : afficher vos récompenses", Actions.rewards, 0)
         self.commands["answer"] = Command("answer", " <réponse> : répondre à une question posée par un personnage", Actions.answer, 1)
                                            
-
         # Setup rooms
-        grotte = Room("Grotte", "Vos paupières s'ouvrent sur l'obscurité moite d'une grotte au froid ancestral. L'air est lourd, saturé d'humidité. Près de la sortie, la silhouette d'une jeune femme, se découpe contre la lumière du jour, scrutant nerveusement l'immensité sauvage au-dehors.")
+        grotte = Room("Grotte", "dans une grotte sombre et humide, les murs suintent d'humidité et l'air est frais et chargé de l'odeur de la terre mouillée.")
         self.rooms.append(grotte)
-        terrain_de_chasse = Room("terrain de chasse", " devant un terrain de chasse face à un combat opposant un mammouth et un Homme préhistorique.")
+        terrain_de_chasse = Room("terrain de chasse", " dans une vaste plaine recouverte de neige, silencieuse et infinie. ")
         self.rooms.append(terrain_de_chasse)
-        abri= Room("Grotte du compagnon", "avec votre nouveau compagnon, il vous amène dans sa grotte et vous aide à faire du feu")
+        abri= Room("Grotte du compagnon", "Vous êtes dans la grotte de Varkk. Sa famille est là, abritée entre les parois de pierre.")
         self.rooms.append(abri)
         egypte_antique = Room("couloir dans la pyramide", "dans une pyramide, où la pierre polie reflète faiblement la lumière des torches. L’air est sec et chargé d’une atmosphère mystique, ponctuée par l’écho de tes pas.")
         self.rooms.append(egypte_antique)
@@ -81,7 +74,6 @@ class Game:
         sphinx = Room("Sphinx", " devant la créature sphinx")
         self.rooms.append(sphinx)
 
-    
         # Create messages for npcs
         msg_varkk={terrain_de_chasse : ["Je m'appelle Varkk.","Voulez-vous venir dans ma grotte ?"], 
                    abri : ["Etranger, écoute les paroles de Varkk. Mon peuple parcourt ces terres depuis que les montagnes sont nées. Le froid et les bêtes géantes nous ont tout pris, mais nous avons appris à écouter la terre. Sous la neige, ma grand-mère trouvait des racines de feu et des baies de sang. En les mélangeant dans un crâne de bison, elle créait un liquide capable de refermer les plaies les plus profondes.Tu as prouvé ton courage. Je ne peux pas t'accompagner plus loin, mais je te donne ceci : notre secret. C'est une potion de vie. Bois-la quand ton souffle deviendra court, et la force de la terre reviendra en toi."]}
@@ -89,21 +81,22 @@ class Game:
                    terrain_de_chasse:["Nous devons aider cet homme préhistorique à vaincre le mammouth."]}
         
         # Create npc for rooms
-        self.Varkk = Character("Varkk", " Un homme préhistorique robuste, vêtu de peaux de bêtes, maniant une lance en pierre.", terrain_de_chasse, msg_varkk)      
-        terrain_de_chasse.characters["Varkk"] = self.Varkk
-        
-        self.Shana =Character("Shana", " une personne se retrouvant dans le même monde que vous", grotte, msg_shana)
-        grotte.characters["Shana"]=self.Shana 
-                
-
+        self.varkk = Character("Varkk", "un homme préhistorique robuste, vêtu de peaux de bêtes, maniant une lance en pierre.", terrain_de_chasse, msg_varkk)      
+        terrain_de_chasse.characters["Varkk"] = self.varkk 
+        self.shana =Character("Shana", "une personne se retrouvant dans le même monde que vous", grotte, msg_shana)
+        grotte.characters["Shana"]=self.shana
+        asha=Character("Asha", "femme de Varkk, elle porte des peaux de bêtes et a un regard doux mais déterminé.", abri, ["Bonjour étranger, je suis Asha, la femme de Varkk.", "Merci d'avoir aidé mon mari."])
+        abri.characters["Asha"]=asha
+        milo=Character("Milo", "un jeune garçon curieux, vêtu de peaux de bêtes, avec des yeux brillants d'innocence.", abri, ["Coucou, moi c'est Milo.", "Merci d'avoir aidé mon papa à chasser le mammouth et ramener à manger."])
+        abri.characters["Milo"]=milo
 
         # Create items for rooms
         lance = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
         terrain_de_chasse.inventory["lance"] = lance
-        branche_1 = Item("branche", "une branche sèche", 0.5)
-        abri.inventory["branche"] = branche_1
-        branche_2 = Item("branche", "une branche sèche", 0.5)
-        grotte.inventory["branche"] = branche_2
+        branche_01 = Item("branche", "une branche sèche", 0.5)
+        grotte.inventory["branche"] = branche_01
+        branche_02 = Item("branche", "une branche sèche", 0.5)
+        abri.inventory["branche"] = branche_02
         cle = Item("cle", "une clé rouillée", 0.1)
         chambre_cachee.inventory["cle"] = cle
         feu = Item("feu", "un feu crépitant", 0)
@@ -114,7 +107,6 @@ class Game:
 
 
         # Create exits for rooms
-
         grotte.exits = {"N" : terrain_de_chasse, "E" : None, "S" : None, "O" : None}
         terrain_de_chasse.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : None}
         abri.exits = {"N" : None, "E" : None, "S" : egypte_antique, "O" : terrain_de_chasse}
@@ -124,12 +116,7 @@ class Game:
         porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None, "N": sphinx}
         sphinx.exits = {"S" : porte, "E" : None, "O" : None, "N" : None}
 
-
-
-
-    
-        """Initialize the player."""
-        
+        """Initialize the player."""     
         player_name = input("\nEntrez votre nom: ")
         self.player = Player(player_name)
         self.player.current_room = grotte  
@@ -138,117 +125,36 @@ class Game:
         self._setup_quests()
 
         
-
-    # Play the game
-    def play(self):
-        self.setup()
-        self.print_welcome()
-        # Loop until the game is finished
-        while not self.finished:
-            # Get the command from the player
-            self.process_command(input("> "))
-        return None
-    
-    
-    # obtenir l'historique des pièces visitées
-    def get_history(self):
-        history=self.player.history
-        if len(history)>0:
-            print("vous avez déjà visité les pièces suivantes :\n")
-            for room in history:
-                print("-",room.name,"\n")    
-        else:
-            print("Aucune pièce visitée auparavant.")
-
-    # revenir à la pièce précédente
-    def back(self):
-        history=self.player.history
-        if len(history)<1:
-            print("vous ne pouvez pas revenir en arrière")
-        else:
-            self.player.current_room=history[-1]
-            history.pop()
-            print(self.player.current_room.get_long_description()) 
-    
-    def get_inventory_weight(self):
-        current_weight = self.player.get_inventory_weight()
-        
-
-    def take(self, item_name):
-        current_room = self.player.current_room
-        
-        # vérifier si l’item est présent dans la pièce
-        if item_name not in current_room.inventory:
-            print(f"L'objet '{item_name}' n'est pas dans la pièce.")
-            return
-        
-        # prendre l’item → le retirer de la pièce…
-        item = current_room.inventory.pop(item_name)
-
-        current_weight = self.player.get_inventory_weight()
-        if current_weight + item.weight > self.player.max_weight:
-             return (
-            f"Vous ne pouvez pas prendre '{item_name}' "
-            f"(poids max dépassé : {self.player.max_weight} kg)."
-        )
-
-        # …et l’ajouter à l’inventaire du joueur
-        self.player.inventory[item_name] = item
-
-        print(f"Vous avez pris {item_name}.")
-
-    def drop(self, item_name):
-        current_room = self.player.current_room
-
-        # vérifier que le joueur possède l'objet
-        if item_name not in self.player.inventory:
-            print(f"L'objet '{item_name}' n'est pas dans l'inventaire.")
-            return
-
-        # retirer de l'inventaire du joueur
-        item = self.player.inventory.pop(item_name)
-
-        # ajouter à la pièce (room.inventory)
-        current_room.inventory[item_name] = item
-
-        print(f"Vous avez déposé {item_name}.")
-
-    def check(self):
-     
-        return self.player.check()
-    
     def _setup_quests(self):
         """Initialize all quests."""
-        quest_mammouth = Quest(
-            title="Chasseur de Mammouths",
-            description="Un chasseur te défie. Réponds à sa question pour obtenir une lance et vaincre le mammouth..",
-            objectives=["Répondre à Varkk"],
+        quest_mammouth_01 = Quest(
+            title="Le Mammouth I",
+            description="Devant vous se déroule un combat opposant un mammouth et un Homme préhistorique. Répondez à la question suivante : Quel est le poids moyen d'un mammouth adulte ?",
+            objectives=["Aller à terrain de chasse", "Répondre à Varkk"],
             reward="lance",
             trigger_room="terrain de chasse"
         )
 
+        quest_mammouth_02 = Quest(
+            title="Le Mammouth II",
+            description=" Vainquez le mammouth et parle avec l'homme. Peut-être qu'il vous donnera quelque chose d'utile.",
+            objectives=["Utiliser lance", "Parler à Varkk"],
+            reward="potion de vie",
+        )
 
         create_fire = Quest(
-            title="Détenteur de feu",
-            description="Récupere du bois et allume un feu",
-            objectives=["Récupérer une branche de la grotte", "Récupérer une branche de l'abri", "Allumer un feu"],
-            reward="Savoir-faire du feu"
+            title="Au Temps Des Premières Flammes",
+            description="Ramasser du bois et allume un feu",
+            objectives=["Ramasser 2 branches", "Utiliser la branche"],
+            reward="feu"
         )
 
-
-        heal_quest = Quest(
-            title="Détenteur de potion de vie",
-            description="Trouvez la potion de vie en discutant avec votre compagnon.",
-            objectives=["Parler à Varkk"],
-            reward="potion de vie",
-            trigger_room="Grotte du compagnon"
-        )
 
 
         # Add quests to player's quest manager
-        self.player.quest_manager.add_quest(quest_mammouth)
+        self.player.quest_manager.add_quest(quest_mammouth_01)
+        self.player.quest_manager.add_quest(quest_mammouth_02)
         self.player.quest_manager.add_quest(create_fire)
-        self.player.quest_manager.add_quest(heal_quest)
         
     def win(self):
         quest_manager=self.player.quest_manager
@@ -277,6 +183,17 @@ class Game:
     def trigger_room(self):
         current_room=self.player.current_room
         self.player.quest_manager.check_room_triggers(current_room.name)
+
+    # Play the game
+    def play(self):
+        self.setup()
+        self.print_welcome()
+        # Loop until the game is finished
+        while not self.finished:
+            # Get the command from the player
+            self.process_command(input("> "))
+        return None
+
 
 
     # Process the command entered by the player
@@ -309,6 +226,9 @@ class Game:
     # Print the welcome message
     def print_welcome(self):
         print(f"\nBienvenue {self.player.name} dans ce jeu d'aventure !")
+        print("Vos paupières s'ouvrent sur l'obscurité moite d'une grotte au froid ancestral. " \
+        "L'air est lourd, saturé d'humidité. Près de la sortie, la silhouette d'une jeune femme, " \
+        "se découpe contre la lumière du jour, scrutant nerveusement l'immensité sauvage au-dehors.")
         print("Entrez 'help' si vous avez besoin d'aide.")
         #
         print(self.player.current_room.get_long_description())

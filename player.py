@@ -1,6 +1,7 @@
 # This file contains the Player class.
 
 from quest import QuestManager
+from item import Item
 class Player():
     """
     This class represents a player. A player is composed of a player name and a player self.
@@ -40,20 +41,52 @@ class Player():
         self.move_count = 0  # Counter for player movements
         self.quest_manager = QuestManager(self)
         self.rewards = []  # List to store earned rewards
-      # Define the move method.
+    
+    # Define the move method.
+    def move(self, direction):
+        # Get the next room from the exits dictionary of the current room.
+        destination = self.current_room.exits[direction]
+
+        # If the next room is None, print an error message and return False.
+        if destination is None:
+            print("\nAucune porte dans cette direction !\n")
+            return False
+        
+        # Set the current room to the next room.
+        self.history.append(self.current_room)
+        self.current_room = destination
+        print(self.current_room.get_long_description())
+        return True
+
+    # Define the get_history method.
+    def get_history(self):
+        if not self.history:
+            return "Vous êtes à votre point de départ, il n'y a pas d'historique."
+        else:
+            result = "Vous avez visité les pièces suivantes :\n"
+            for room in self.history:
+                result += f"- {room.name}\n"
+            return result
 
     #Define the get_inventory method.
     def get_inventory(self):
-        print(self.inventory)
         if len(self.inventory) == 0:
-            return "Votre inventaire est vide."
-        
-        result= "Vous disposez des items suivants :\n"
-        for item in self.inventory.values():
-            result += f"- {item}\n"
-        return result
-    
-    
+            return "Votre inventaire est vide.\n"
+        else:
+            result= "Vous disposez des items suivants :\n"
+            for items in self.inventory.values():
+                item=items[0]
+                quantity=len(items)
+                result += f"- {item.name}(x{quantity}) : {item.description}\n"
+            return result
+
+    def get_inventory_weight(self):
+        total = 0
+        for items in self.inventory.values():
+            for item in items:
+                total += item.weight
+        return total
+
     # Check room visit objectives
         self.quest_manager.check_room_objectives(self.current_room.name)
 
@@ -64,12 +97,6 @@ class Player():
 
 
         return True
-
-    def get_inventory_weight(self):
-        total = 0
-        for item in self.inventory.values():
-            total += item.weight
-        return total
     
     def take_damage(self, damage):
         self.hp -= damage
@@ -103,9 +130,8 @@ class Player():
         """
         if reward and reward not in self.rewards:
             self.rewards.append(reward)
+            """self.inventory[reward] = reward"""
             print(f"\n🎁 Vous avez obtenu: {reward}\n")
-
-
 
 
     def show_rewards(self):
@@ -136,24 +162,6 @@ class Player():
             for reward in self.rewards:
                 print(f"  • {reward}")
             print()
-    
-    # Define the move method.
-    def move(self, direction):
-        # Get the next room from the exits dictionary of the current room.
-        destination = self.current_room.exits[direction]
-
-        # If the next room is None, print an error message and return False.
-        if destination is None:
-            print("\nAucune porte dans cette direction !\n")
-            return False
-        
-        # Set the current room to the next room.
-        self.history.append(self.current_room)
-        self.current_room = destination
-        print(self.current_room.get_long_description())
-      
-
-        return True
 
 
     
