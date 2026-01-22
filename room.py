@@ -68,8 +68,9 @@ class Room:
                 exit_string += exit + ", "
         exit_string = exit_string.strip(", ")
         return exit_string
+    
 
     # Return a long description of this room including exits.
     def get_long_description(self):
-        return f"\nVous êtes {self.description}\n\n{self.get_exit_string()}\n"
+        return f"Vous êtes {self.description}\n\n{self.get_exit_string()}\n"
     

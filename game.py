@@ -22,6 +22,9 @@ class Game:
         self.Shana=None
         self.direction= set() #ensemble des directions valides
         self.DEBUG=False
+        self.current_era="prehistoire"
+        
+
 
 
 
@@ -34,6 +37,8 @@ class Game:
         self.commands["quit"] = quit
         go = Command("go", " <direction> : se déplacer dans une direction cardinale (N, E, S, O, D, U)", Actions.go, 1)
         self.commands["go"] = go
+        inventory = Command("inventory", " : afficher l'inventaire du joueur", Actions.inventory, 0)
+        self.commands["inventory"] = inventory
         history = Command("history", " : obtenir l'historique",Actions.history, 0)
         self.commands["history"]=history
         back=Command("back"," : revenir à la pièce précédente",Actions.back,0)
@@ -92,7 +97,6 @@ class Game:
 
         # Create items for rooms
         lance = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
-        terrain_de_chasse.inventory["lance"] = lance
         branche_01 = Item("branche", "une branche sèche", 0.5)
         grotte.inventory["branche"] = branche_01
         branche_02 = Item("branche", "une branche sèche", 0.5)
@@ -101,7 +105,6 @@ class Game:
         chambre_cachee.inventory["cle"] = cle
         feu = Item("feu", "un feu crépitant", 0)
         potion = Item("potion", "une potion de vie qui vous permet de vous soigner", 0.5)
-        abri.inventory["potion"] = potion
         beamer = Item("beamer", "un beamer futuriste", 1)
         sphinx.inventory["beamer"] = beamer
 
@@ -109,22 +112,121 @@ class Game:
         # Create exits for rooms
         grotte.exits = {"N" : terrain_de_chasse, "E" : None, "S" : None, "O" : None}
         terrain_de_chasse.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : None}
-        abri.exits = {"N" : None, "E" : None, "S" : egypte_antique, "O" : terrain_de_chasse}
+        abri.exits = {"N" : None, "E" : None, "S" : None, "O" : terrain_de_chasse}
         egypte_antique.exits = {"D" : porte , "E" : None , "S" : None, "O" : question_chambre_cachee}
         question_chambre_cachee.exits = {"D" : chambre_cachee, "E" : egypte_antique, "S" : None, "O" : None}
         chambre_cachee.exits = {"U" : question_chambre_cachee, "E" : None, "S" : None, "O" : None}
         porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None, "N": sphinx}
         sphinx.exits = {"S" : porte, "E" : None, "O" : None, "N" : None}
 
-        """Initialize the player."""     
+        abri.locked_exits = {"S": True}  # Lock the exit to Egypt initially
+
+
+    
+        """Initialize the player."""
+        
         player_name = input("\nEntrez votre nom: ")
         self.player = Player(player_name)
-        self.player.current_room = grotte  
+        self.player.current_room = grotte 
+
+        #checkpoint:
+        self.rooms_by_name = {room.name: room for room in self.rooms}
+        self.era_checkpoints = {
+            "prehistoire": self.rooms_by_name.get("Grotte"),
+            "egypte_antique": self.rooms_by_name.get("couloir dans la pyramide")
+        }
+
+        self.player.checkpoint_reached = {
+            "prehistoire": False,
+            "egypte_antique": False
+        } 
  
         # Setup quests
         self._setup_quests()
 
+    # Play the game
+    def play(self):
+        self.setup()
+        self.print_welcome()
+        # Loop until the game is finished
+        while not self.finished:
+            # Get the command from the player
+            if not self.player.is_alive:
+                self.respawn()
+                continue
+
+            self.process_command(input("> "))
+
+        return None
+    
+    
+    # obtenir l'historique des pièces visitées
+    def get_history(self):
+        history=self.player.history
+        if len(history)>0:
+            print("vous avez déjà visité les pièces suivantes :\n")
+            for room in history:
+                print("-",room.name,"\n")    
+        else:
+            print("Aucune pièce visitée auparavant.")
+
+    # revenir à la pièce précédente
+    def back(self):
+        history=self.player.history
+        if len(history)<1:
+            print("vous ne pouvez pas revenir en arrière")
+        else:
+            self.player.current_room=history[-1]
+            history.pop()
+            print(self.player.current_room.get_long_description()) 
+    
+    def get_inventory_weight(self):
+        current_weight = self.player.get_inventory_weight()
         
+
+    def take(self, item_name):
+        current_room = self.player.current_room
+        
+        # vérifier si l’item est présent dans la pièce
+        if item_name not in current_room.inventory:
+            print(f"L'objet '{item_name}' n'est pas dans la pièce.")
+            return
+        
+        # prendre l’item → le retirer de la pièce…
+        item = current_room.inventory.pop(item_name)
+
+        current_weight = self.player.get_inventory_weight()
+        if current_weight + item.weight > self.player.max_weight:
+             return (
+            f"Vous ne pouvez pas prendre '{item_name}' "
+            f"(poids max dépassé : {self.player.max_weight} kg)."
+        )
+
+        # …et l’ajouter à l’inventaire du joueur
+        self.player.inventory[item_name] = item
+
+        print(f"Vous avez pris {item_name}.")
+
+    def drop(self, item_name):
+        current_room = self.player.current_room
+
+        # vérifier que le joueur possède l'objet
+        if item_name not in self.player.inventory:
+            print(f"L'objet '{item_name}' n'est pas dans l'inventaire.")
+            return
+
+        # retirer de l'inventaire du joueur
+        item = self.player.inventory.pop(item_name)
+
+        # ajouter à la pièce (room.inventory)
+        current_room.inventory[item_name] = item
+
+        print(f"Vous avez déposé {item_name}.")
+
+    def check(self):
+     
+        return self.player.check()
+    
     def _setup_quests(self):
         """Initialize all quests."""
         quest_mammouth_01 = Quest(
@@ -145,7 +247,7 @@ class Game:
         create_fire = Quest(
             title="Au Temps Des Premières Flammes",
             description="Ramasser du bois et allume un feu",
-            objectives=["Ramasser 2 branches", "Utiliser la branche"],
+            objectives=["Ramasser 2 branches", "Utiliser les branches"],
             reward="feu"
         )
 
@@ -167,7 +269,7 @@ class Game:
     def loose(self):
         player=self.player
         current_room=player.current_room
-        if player.alive==False:
+        if player.is_alive==False:
             return True
         
         if current_room == "Combat avec un mammouth":
@@ -179,6 +281,63 @@ class Game:
                 return True
         
         return False
+    
+    def can_unlock_egypte_antique(self):
+        required_titles = {"Le Mammouth II", "Au Temps Des Premières Flammes", "Le Mammouth I"}
+        quest_manager = self.player.quest_manager
+
+        for quest in quest_manager.quests:
+            if quest.title in required_titles and not quest.is_completed:
+                return False
+        return True
+    
+    def unlock_egypte_antique(self):
+        if getattr(self, "egypte_unlocked", False):
+            return
+        
+        if not self.can_unlock_egypte_antique():
+            return
+
+        abri=next((room for room in self.rooms if room.name=="Grotte du compagnon"),None)
+        egypte_antique=next((room for room in self.rooms if room.name=="couloir dans la pyramide"),None)    
+        
+        if abri is None or egypte_antique is None:
+            return
+        
+        abri.exits["S"]=egypte_antique
+        abri.locked_exits["S"]=False
+        self.egypte_unlocked = True
+        print("\n✅ Le passage vers l'Égypte antique est maintenant débloqué !\n")
+
+    def handle_death(self):
+        if not self.player.is_alive:
+            self.player.respawn()
+
+    def respawn(self):
+        checkpoint = self.era_checkpoints.get(self.current_era)
+        print(f"\n Vous vous réveillez à : {checkpoint.name}\n")
+
+        self.player.is_alive = True
+        self.player.current_room = checkpoint
+
+        print(checkpoint.get_long_description())
+
+    def reach_checkpoint(self):
+        era_map = {
+            "Préhistoire": "prehistoire",
+            "Égypte antique": "egypte_antique"
+        }
+
+        era = era_map.get(self.current_era)
+        if not era:
+            return
+
+        checkpoint_room = self.player.checkpoint[era]
+
+        # Vérifie si le joueur est dans le checkpoint et s’il ne l’a pas encore atteint
+        if self.player.current_room == checkpoint_room and not self.player.checkpoint_reached[era]:
+            print(f"\n💡 Vous avez atteint le checkpoint de l'époque {self.current_era} !\n")
+            self.player.checkpoint_reached[era] = True
 
     def trigger_room(self):
         current_room=self.player.current_room
@@ -221,6 +380,9 @@ class Game:
             command.action(self, list_of_words, command.number_of_parameters)
             # Vérifier les déclencheurs de quêtes basés sur la pièce actuelle
             self.trigger_room()
+            self.unlock_egypte_antique()
+            self.handle_death()
+            self.reach_checkpoint()
 
 
     # Print the welcome message

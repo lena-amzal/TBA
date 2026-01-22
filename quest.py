@@ -476,10 +476,10 @@ class QuestManager:
         False
         """
         for quest in self.quests:
-            if quest.title == quest_title and not quest.is_active:
-                quest.activate()
-                self.active_quests.append(quest)
-                return True
+            if quest.title.lower() == quest_title and not quest.is_active:
+                    quest.activate()
+                    self.active_quests.append(quest)
+                    return True
         return False
 
 

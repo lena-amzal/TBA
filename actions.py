@@ -63,21 +63,26 @@ class Actions:
             print(game.player.current_room.get_long_description())  # Affiche la salle actuelle
             return False
 
+        """
         # Vérifier que la direction est valide dans tout le jeu
         if direction not in game.direction:
             print(f"Direction '{direction}' non reconnue.")
             return False
+        """
         old_room = player.current_room
-
+        
         # Tenter déplacement dans la direction choisie
         result = player.move(direction)
         current_room = player.current_room
+        if direction not in old_room.exits or old_room.exits[direction] is None:
+            print(f"\n❌ Impossible d'aller vers '{direction}' depuis ici.\n")
+            return False
 
         # Move Shana to follow the player
-        if current_room is not None and game.Shana is not None:
+        if player.current_room is not None and game.Shana is not None:
             del old_room.characters["Shana"]
-            current_room.characters["Shana"] = game.Shana
-            game.Shana.current_room = current_room
+            player.current_room.characters["Shana"] = game.Shana
+            game.Shana.current_room = player.current_room
 
         # Move Varkk if second quest completed
         quest = game.player.quest_manager.get_quest_by_title("Chasseur de Mammouths")
@@ -190,6 +195,17 @@ class Actions:
         print(game.player.get_history())
         return True
     
+    def inventory(game, list_of_words, number_of_parameters):
+        l = len(list_of_words)
+        if l != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            return False
+        
+        # Display the player's inventory
+        print(game.player.get_inventory())
+        return True
+    
     def back (game, list_of_words, number_of_parameters):
         l = len(list_of_words)
         if l != number_of_parameters + 1:
@@ -292,8 +308,8 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-        # Use the item if it is in the inventory
         item_name = list_of_words[1]
+
         if item_name not in game.player.inventory:
             print(f"Vous n'avez pas '{item_name}' dans votre inventaire.")
             return False
@@ -308,31 +324,34 @@ class Actions:
                 game.player.quest_manager.check_action_objectives(action, item_name)
 
 
-        """if item_name == "Lance préhistorique" and game.player.current_room == "Combat avec un mammouth":
+        if item_name == "lance" and game.player.current_room == "terrain de chasse":
             print("🦣 Vous avez vaincu le mammouth avec votre lance préhistorique !")
-            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Chasseur de Mammouths"), None)
+            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Le Mammouth II"), None)
             if quest:
                 quest.complete_objective("Visiter le terrain de chasse", game.player)
-                quest.complete_objective("Répondre à la question du chasseur", game.player)
+                quest.complete_objective("Répondre Varkk", game.player)
+                
 
             return True
         
         #utiliser la branche pour allumer un feu
         if item_name == "branche":
-            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Détenteur de feu"), None)
-            if (
-            "Récupérer une branche de la grotte" in quest.completed_objectives and
-            "Récupérer une branche de l'abri" in quest.completed_objectives
-            ):
+            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Au Temps Des Premières Flammes"), None)
+            if quest and "Ramasser 2 branches" in quest.completed_objectives:
                 print("🔥 Vous utilisez les branches pour allumer un feu.   ")
 
-                quest.complete_objective("Allumer un feu", game.player)
+                quest.complete_objective("Utiliser les branches", game.player)
 
                 if quest.reward:
                     game.player.add_reward(quest.reward)
                     game.player.inventory["feu"] = Item("feu", "un feu crépitant", 0)
-                    if "branche" in game.player.inventory:
-                        del game.player.inventory["branche"]"""
+
+                if "branche" in game.player.inventory:
+                    del game.player.inventory["branche"]
+            else:
+                print("Vous n'avez pas les deux branches nécessaires pour allumer un feu.")
+            return True
+        print(f"Vous ne pouvez pas utiliser '{item_name}' ici.")
         return True
 
     def talk(game, list_of_words, number_of_parameters):
@@ -354,7 +373,26 @@ class Actions:
 
         # Check quest objectives related to talking to NPCs
         game.player.quest_manager.check_action_objectives("Parler à", npc_name)
-        return True
+
+        # Récupérer la quête "Le Mammouth II"
+        quest = game.player.quest_manager.get_quest_by_title("Le Mammouth II")
+        if not quest:
+            return  # pas de quête active
+
+        # Vérifier si la sous-quête "Utiliser la lance" est complétée
+        if "Utiliser la lance" in getattr(quest, "completed_objectives", []):
+            # Terminer la quête principale
+            quest.is_active = False
+            quest.is_completed = True
+            print(f"🏆 Quête terminée : {quest.title}")
+        # Ajouter la potion au joueur dans l'inventaire (dict)
+        if quest.reward:  # si une récompense est définie
+            game.player.add_reward(quest.reward)
+            game.player.inventory["potion"] = Item(
+                "potion",
+                "une potion de vie qui vous permet de vous soigner",
+                0.5
+            )
         
 
     @staticmethod
@@ -497,7 +535,7 @@ class Actions:
             return False
 
         # Get the quest title from the list of words (join all words after command)
-        quest_title = " ".join(list_of_words[1:])
+        quest_title = " ".join(list_of_words[1:]).lower().strip()
 
         # Try to activate the quest
         if game.player.quest_manager.activate_quest(quest_title):
@@ -580,6 +618,10 @@ class Actions:
 
         if user_answer == bonne_reponse:
             game.player.quest_manager.check_action_objectives("Répondre à", "Varkk")
+            quest = game.player.quest_manager.get_quest_by_title("Le Mammouth I")
+            if quest.reward:
+                    game.player.add_reward(quest.reward)
+                    game.player.inventory["lance"] = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
 
         else:
             quest.errors += 1
@@ -592,71 +634,5 @@ class Actions:
                 print("💀 Tu as échoué trop de fois.")
                 game.player.is_alive = False
                 print("☠️ Tu es mort.")
-        
-        """
-        quest = game.quest_manager.get_active_quest_by_title("Chasseur de Mammouths")
-
-        if not quest or not quest.is_active:
-            print("❌ Aucune quête active liée à cette question.")
-            return False
-        
-        if not hasattr(quest, "errors"):
-            quest.errors = 0
-
-        bonne_reponse = 7
-        max_errors = 3
-
-        try:
-            answer = int(answer)
-        except ValueError:
-            print("❌ Réponse invalide. Donne un nombre.")
-            return False
-    
-        # ✅ Bonne réponse
-        if answer == bonne_reponse:
-            print("✅ Bonne réponse !")
-            print("🏹 Le chasseur te donne une lance faite de bois et de pierre.")
-
-        game.player.add_reward("Lance préhistorique")
-        quest.complete_objective("Répondre à la question du chasseur", game.player)
-        return True
-    
-        # ❌ Mauvaise réponse
-        quest.errors += 1
-        remaining = max_errors - quest.errors
-
-        if remaining > 0:
-            print(f"❌ Mauvaise réponse. Il te reste {remaining} tentative(s).")
-        if quest.errors == 1:
-            print("💡 Indice : en dessous de 8")
-        else:
-            print("💀 Tu as échoué trop de fois.")
-            print("🦣 Le mammouth te piétine.")
-            game.player.is_alive = False
-            print("☠️ Tu es mort.")
-        return False
-        
-        print("🧠 Question : Quel est le poids moyen d’un mammouth (en tonnes) ?")
-        
-        bonne_réponse = "7"
-        """
-        
-        
-
-    
-
-        
-    
-        
-    
-
-
-
-    
-        
-
-
-            
-
         
         
