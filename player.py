@@ -16,7 +16,7 @@ class Player():
         __init__(self, name) : The constructor.
         move(self,direction) : move the player to the next room according to the direction
         get_inventory(str) : return the inventory of the player.
-    
+
     Examples:
     >>> player = Player("nom du joueur", "la pièce où le joueur se trouve")
     >>> player.name
@@ -25,8 +25,6 @@ class Player():
     "la pièce où le joueur se trouve"
 
     """
-    from item import Item
-
 
     # Define the constructor.
     def __init__(self, name,):
@@ -40,9 +38,9 @@ class Player():
         self.is_alive=True
         self.move_count = 0  # Counter for player movements
         self.quest_manager = QuestManager(self)
-        self.checkpoint = None  # To store the checkpoint room
+        self.last_checkpoint = None
         self.rewards = []  # List to store earned rewards
-    
+
     # Define the move method.
     def move(self, direction):
         # Get the next room from the exits dictionary of the current room.
@@ -52,7 +50,7 @@ class Player():
         if destination is None:
             print("\nAucune porte dans cette direction !\n")
             return False
-        
+
         # Set the current room to the next room.
         self.history.append(self.current_room)
         self.current_room = destination
@@ -70,7 +68,6 @@ class Player():
             return result
 
     #Define the get_inventory method.
-    """
     def get_inventory(self):
         if len(self.inventory) == 0:
             return "Votre inventaire est vide.\n"
@@ -81,16 +78,8 @@ class Player():
                 quantity=len(items)
                 result += f"- {item.name}(x{quantity}) : {item.description}\n"
             return result
-    """
-    def get_inventory(self):
-        if not self.inventory:
-            return " Votre inventaire est vide."
-        else:
-            result = "Votre inventaire contient :\n"
-            for item in self.inventory:
-                result += f"- {item}\n"
-            return result
-        
+
+
     def get_inventory_weight(self):
         total = 0
         for items in self.inventory.values():
@@ -108,7 +97,7 @@ class Player():
 
 
         return True
-    
+
     def take_damage(self, damage):
         self.hp -= damage
         if self.hp <= 0:
@@ -122,12 +111,12 @@ class Player():
     def add_reward(self, reward):
         """
         Add a reward to the player's rewards list.
-       
+
         Args:
             reward (str): The reward to add.
-           
+
         Examples:
-       
+
         >>> player = Player("Bob")
         >>> player.add_reward("Épée magique") # doctest: +NORMALIZE_WHITESPACE
         <BLANKLINE>
@@ -139,18 +128,24 @@ class Player():
         >>> len(player.rewards)
         1
         """
-        if reward and reward not in self.rewards:
+        if isinstance(reward, Item):
+            if reward.name in self.inventory:
+                self.inventory[reward.name].append(reward)
+            else:
+                self.inventory[reward.name] = [reward]
+            print(f"🎁 Vous avez obtenu: {reward.name}\n")
+
+        elif reward not in self.rewards:
             self.rewards.append(reward)
-            """self.inventory[reward] = reward"""
             print(f"\n🎁 Vous avez obtenu: {reward}\n")
 
 
     def show_rewards(self):
         """
         Display all rewards earned by the player.
-       
+
         Examples:
-       
+
         >>> player = Player("Charlie")
         >>> player.show_rewards() # doctest: +NORMALIZE_WHITESPACE
         <BLANKLINE>
@@ -173,50 +168,3 @@ class Player():
             for reward in self.rewards:
                 print(f"  • {reward}")
             print()
-    
-    def respawn(self):
-        if self.checkpoint is None:
-            print("\n❌ Aucun checkpoint atteint. Impossible de réapparaître.\n")
-            return 
-        
-        self.current_room = self.checkpoint
-        self.hp = self.max_hp
-        self.is_alive = True
-        self.history = []
-        print(f"\n🔄 Vous réapparaissez au checkpoint : {self.checkpoint.name}")
-        print(self.current_room.get_long_description())
-
-
-
-
-    # Define the move method.
-    def move(self, direction):
-        # Get the next room from the exits dictionary of the current room.
-        destination = self.current_room.exits[direction]
-
-        if hasattr(self.current_room, 'is_checkpoint') and self.current_room.checkpoint:
-            self.checkpoint = self.current_room
-            print("\n✅ Checkpoint atteint !\n")
-
-        if hasattr(self.current_room, "locked_exits") and self.current_room.locked_exits.get(direction, False):
-            print("\n❌Ce passage est scellé ! Vous ne pouvez pas y accéder pour le moment.\n")
-            return False
-
-        # If the next room is None, print an error message and return False.
-        if destination is None:
-            print("\nAucune porte dans cette direction !\n")
-            return False
-        
-        # Set the current room to the next room.
-        if self.current_room not in self.history:
-            self.history.append(self.current_room)
-        self.current_room = destination
-        print(self.current_room.get_long_description())
-      
-
-        return True
-
-
-    
-
-    

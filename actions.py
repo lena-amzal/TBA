@@ -15,11 +15,11 @@
 MSG0 = "\nLa commande '{command_word}' ne prend pas de paramètre.\n"
 # The MSG1 variable is used when the command takes 1 parameter.
 MSG1 = "\nLa commande '{command_word}' prend 1 seul paramètre.\n"
-from room import Room
+
 from quest import Quest
+from room import Room
 from item import Item
 class Actions:
-
 
     def go(game, list_of_words, number_of_parameters):
         """
@@ -35,7 +35,7 @@ class Actions:
             bool: True if the command was executed successfully, False otherwise.
 
         Examples:
-        
+
         >>> from game import Game
         >>> game = Game()
         >>> game.setup()
@@ -48,7 +48,7 @@ class Actions:
 
 
         """
-        
+
         player = game.player
         l = len(list_of_words)
         # If the number of parameters is incorrect, print an error message and return False.
@@ -56,49 +56,50 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-        
-        direction = list_of_words[1][0].upper()
-        if direction is None:
-            print(f"Direction '{direction}' non reconnue.")
-            print(game.player.current_room.get_long_description())  # Affiche la salle actuelle
-            return False
 
-        """
-        # Vérifier que la direction est valide dans tout le jeu
+        direction = list_of_words[1][0].upper()
         if direction not in game.direction:
             print(f"Direction '{direction}' non reconnue.")
+            print(player.current_room.get_long_description())  # Affiche la salle actuelle
             return False
-        """
-        old_room = player.current_room
-        
+
+
+        # Check if the player can leave the current era
+        next_room = player.current_room.exits.get(direction)
+        try:
+            if next_room.era != game.current_era :
+                if not game.can_leave_current_era():
+                    print("\n⛔ Vous devez terminer toutes les quêtes de ce monde avant de le quitter.\n")
+                    return False
+                # If the player is entering a new era, update the current_era
+                game.current_era = next_room.era
+                print(f"\nBienvenue dans le monde : {game.current_era}\n")
+
+        except AttributeError:
+            print("Direction invalide.")
+            return False
+
+
         # Tenter déplacement dans la direction choisie
+        old_room = player.current_room
         result = player.move(direction)
         current_room = player.current_room
-        if direction not in old_room.exits or old_room.exits[direction] is None:
-            print(f"\n❌ Impossible d'aller vers '{direction}' depuis ici.\n")
-            return False
+
+        # Check for questions in active quests
+        for quest in player.quest_manager.active_quests:
+            if quest.trigger_room:
+                    if current_room.name == quest.trigger_room:
+                        quest.show_question()
 
         # Move Shana to follow the player
-        if player.current_room is not None and game.Shana is not None:
-            del old_room.characters["Shana"]
-            player.current_room.characters["Shana"] = game.Shana
-            game.Shana.current_room = player.current_room
-
-        # Move Varkk if second quest completed
-        quest = game.player.quest_manager.get_quest_by_title("Chasseur de Mammouths")
-        abri = game.rooms[2]
-        if quest and quest.is_completed:
-            if "Varkk" in old_room.characters and current_room == abri:
-                del old_room.characters["Varkk"]
-                abri.characters["Varkk"] = game.Varkk
-                game.Varkk.current_room = abri
+        game.move_shana()
 
         # Move some characters randomly
         character = list(current_room.characters.keys())
         for char_name in character:
             if char_name not in ["Varkk", "Shana"]:
                 char = current_room.characters[char_name]
-                char.move() 
+                char.move()
         player.get_history()
 
         # Trigger room-based quests
@@ -107,7 +108,7 @@ class Actions:
         # Check room visit objectives
         game.player.quest_manager.check_room_objectives(current_room.name)
         return result
-    
+
 
     def quit(game, list_of_words, number_of_parameters):
         """
@@ -140,7 +141,7 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        
+
         # Set the finished attribute of the game object to True.
         player = game.player
         msg = f"\nMerci {player.name} d'avoir joué. Au revoir.\n"
@@ -151,7 +152,7 @@ class Actions:
     def help(game, list_of_words, number_of_parameters):
         """
         Print the list of available commands.
-        
+
         Args:
             game (Game): The game object.
             list_of_words (list): The list of words in the command.
@@ -176,7 +177,7 @@ class Actions:
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
-            
+
         # Print the list of available commands.
         print("\nVoici les commandes disponibles:")
         for command in game.commands.values():
@@ -190,54 +191,49 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        
+
         # Display the player's room visit history
         print(game.player.get_history())
         return True
-    
+
     def inventory(game, list_of_words, number_of_parameters):
         l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        
+
         # Display the player's inventory
         print(game.player.get_inventory())
         return True
-    
+
     def back (game, list_of_words, number_of_parameters):
         l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        
+
         # Go back to the previous room in history
         if not game.player.history:
             print("Vous êtes de retour à votre point de départ")
             return False
         else:
-           
+
             previous_room = game.player.history.pop()
-            old_room = game.player.current_room
             game.player.current_room = previous_room
-            current_room = game.player.current_room
             print(f"Vous êtes retourné à la pièce : {previous_room.name}")
             print(previous_room.get_long_description())
-            if game.Shana is not None:
-                del old_room.characters["Shana"]
-                current_room.characters["Shana"] = game.Shana
-                game.Shana.current_room = current_room
-        return True
-    
+            game.move_shana()
+            return True
+
     def look(game, list_of_words, number_of_parameters):
         l = len(list_of_words)
         if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        
+
         # Display the current room's long description and inventory
         print(game.player.current_room.get_long_description())
         print(game.player.current_room.get_inventory())
@@ -249,28 +245,31 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-        
+
         # Take the item if it is in the room
         item_name = list_of_words[1]
         if item_name not in game.player.current_room.inventory.keys():
             print(f"L'objet '{item_name}' n'est pas dans la pièce.")
             return False
         else :
-            item= game.player.current_room.inventory[item_name]
+            item= game.player.current_room.inventory[item_name].pop(0)
             if item_name not in game.player.inventory:
                 game.player.inventory[item_name]=[item]
             else:
                 game.player.inventory[item_name].append(item)
-            del game.player.current_room.inventory[item_name]
+            if len( game.player.current_room.inventory[item_name]) == 0:
+                del game.player.current_room.inventory[item_name]
             print(f"Vous avez pris '{item_name}'.")
-        
+
         # Check quest objectives related to taking items
         for quest in game.player.quest_manager.active_quests:
             for objective in quest.objectives:
                 words=objective.split(" ")
                 counter_name="".join(words[2:])
-                current_count= len(game.player.inventory.get(item_name))
-                game.player.quest_manager.check_counter_objectives(counter_name, current_count)
+                current_count= len(game.player.inventory.get(item_name, []))
+                for action in ["Ramasser", "Prendre"]:
+                    quest.check_counter_objective(action, counter_name, current_count)
+                    quest.check_action_objective(action, item_name)
 
     def drop(game, list_of_words, number_of_parameters):
         l = len(list_of_words)
@@ -278,7 +277,7 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-        
+
         # Drop the item if it is in the inventory
         item_name = list_of_words[1]
         if item_name not in game.player.inventory:
@@ -288,8 +287,22 @@ class Actions:
             item = game.player.inventory[item_name].pop()
             if len( game.player.inventory[item_name]) == 0:
                 del game.player.inventory[item_name]
-            game.player.current_room.inventory[item_name] = item
+            if item_name not in game.player.current_room.inventory:
+                game.player.current_room.inventory[item_name]=[item]
+            else:
+                game.player.current_room.inventory[item_name].append(item)
             print(f"Vous avez déposé '{item_name}'.")
+
+        # Check quest objectives related to using items
+        for quest in game.player.quest_manager.active_quests:
+            for objective in quest.objectives:
+                words=objective.split(" ")
+                counter_name="".join(words[2:])
+                current_count= len(game.player.current_room.inventory.get(item_name, []))
+                quest.check_counter_objective("Déposer", counter_name, current_count)
+                quest.check_action_objective("Déposer", item_name)
+
+
 
     def check(game, list_of_words, number_of_parameters):
         l=len(list_of_words)
@@ -297,11 +310,11 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-        
+
         # Display the player's inventory
         print(game.player.get_inventory())
         return True
-    
+
     def use(game, list_of_words, number_of_parameters):
         l=len(list_of_words)
         if l != number_of_parameters + 1:
@@ -313,45 +326,10 @@ class Actions:
         if item_name not in game.player.inventory:
             print(f"Vous n'avez pas '{item_name}' dans votre inventaire.")
             return False
-        else :
-            print(f"Vous utilisez '{item_name}'.")
+        print(f"Vous utilisez '{item_name}'.")
 
         # Check quest objectives related to using items
-        for quest in game.player.quest_manager.active_quests:
-            for objective in quest.objectives:
-                words=objective.split(" ")
-                action=words[0]
-                game.player.quest_manager.check_action_objectives(action, item_name)
-
-
-        if item_name == "lance" and game.player.current_room == "terrain de chasse":
-            print("🦣 Vous avez vaincu le mammouth avec votre lance préhistorique !")
-            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Le Mammouth II"), None)
-            if quest:
-                quest.complete_objective("Visiter le terrain de chasse", game.player)
-                quest.complete_objective("Répondre Varkk", game.player)
-                
-
-            return True
-        
-        #utiliser la branche pour allumer un feu
-        if item_name == "branche":
-            quest = next((q for q in game.player.quest_manager.active_quests if q.title == "Au Temps Des Premières Flammes"), None)
-            if quest and "Ramasser 2 branches" in quest.completed_objectives:
-                print("🔥 Vous utilisez les branches pour allumer un feu.   ")
-
-                quest.complete_objective("Utiliser les branches", game.player)
-
-                if quest.reward:
-                    game.player.add_reward(quest.reward)
-                    game.player.inventory["feu"] = Item("feu", "un feu crépitant", 0)
-
-                if "branche" in game.player.inventory:
-                    del game.player.inventory["branche"]
-            else:
-                print("Vous n'avez pas les deux branches nécessaires pour allumer un feu.")
-            return True
-        print(f"Vous ne pouvez pas utiliser '{item_name}' ici.")
+        game.player.quest_manager.check_action_objectives("Utiliser", item_name)
         return True
 
     def talk(game, list_of_words, number_of_parameters):
@@ -360,13 +338,13 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-        
+
         # Check if the NPC is in the current room
         npc_name = list_of_words[1].capitalize()
         if npc_name not in game.player.current_room.characters:
             print(f"Il n'y a personne nommé '{npc_name}' ici.")
             return False
-        
+
         # Display the message from the NPC
         npc = game.player.current_room.characters[npc_name]
         npc.get_msg()
@@ -374,32 +352,13 @@ class Actions:
         # Check quest objectives related to talking to NPCs
         game.player.quest_manager.check_action_objectives("Parler à", npc_name)
 
-        # Récupérer la quête "Le Mammouth II"
-        quest = game.player.quest_manager.get_quest_by_title("Le Mammouth II")
-        if not quest:
-            return  # pas de quête active
 
-        # Vérifier si la sous-quête "Utiliser la lance" est complétée
-        if "Utiliser la lance" in getattr(quest, "completed_objectives", []):
-            # Terminer la quête principale
-            quest.is_active = False
-            quest.is_completed = True
-            print(f"🏆 Quête terminée : {quest.title}")
-        # Ajouter la potion au joueur dans l'inventaire (dict)
-        if quest.reward:  # si une récompense est définie
-            game.player.add_reward(quest.reward)
-            game.player.inventory["potion"] = Item(
-                "potion",
-                "une potion de vie qui vous permet de vous soigner",
-                0.5
-            )
-        
 
     @staticmethod
     def quests(game, list_of_words, number_of_parameters):
         """
         Show all quests and their status.
-        
+
         Args:
             game (Game): The game object.
             list_of_words (list): The list of words in the command.
@@ -444,7 +403,7 @@ class Actions:
     def quest(game, list_of_words, number_of_parameters):
         """
         Show details about a specific quest.
-        
+
         Args:
             game (Game): The game object.
             list_of_words (list): The list of words in the command.
@@ -500,7 +459,7 @@ class Actions:
     def activate(game, list_of_words, number_of_parameters):
         """
         Activate a specific quest.
-        
+
         Args:
             game (Game): The game object.
             list_of_words (list): The list of words in the command.
@@ -553,7 +512,7 @@ class Actions:
     def rewards(game, list_of_words, number_of_parameters):
         """
         Display all rewards earned by the player.
-        
+
         Args:
             game (Game): The game object.
             list_of_words (list): The list of words in the command.
@@ -584,55 +543,31 @@ class Actions:
             command_word = list_of_words[0]
             print(MSG0.format(command_word=command_word))
             return False
-        
+
         # Show all rewards
         game.player.show_rewards()
         return True
 
+    @staticmethod
     def answer(game, list_of_words, number_of_parameters):
+        l = len(list_of_words)
         # If the number of parameters is incorrect, print an error message and return False.
-        n = len(list_of_words)
-        if n != number_of_parameters + 1:
+        if l != number_of_parameters + 1:
             command_word = list_of_words[0]
             print(MSG1.format(command_word=command_word))
             return False
-        
-        if len(list_of_words) < 2:
-            print("❌ Utilisation : answer <ta réponse>")
-            return
-    
-        quest = game.player.quest_manager.get_quest_by_title("Le Mammouth I")
-    
-        if not quest or not quest.is_active:
-            print("❌ Aucune quête active liée à cette question.")
-            return
-        try:
-            user_answer = int(list_of_words[1])
-        except ValueError:
-            print("❌ Réponse invalide. Donne un nombre.")
-            return
-        bonne_reponse = 7
 
-        if not hasattr(quest, "errors"):
-            quest.errors = 0
+        # Get the response from the command
+        response = " ".join(list_of_words[1:])
+        quest = game.player.quest_manager.get_active_question_quest()
+        if not quest.question:
+            print("Aucune question n'est posée.")
+            return False
 
-        if user_answer == bonne_reponse:
-            game.player.quest_manager.check_action_objectives("Répondre à", "Varkk")
-            quest = game.player.quest_manager.get_quest_by_title("Le Mammouth I")
-            if quest.reward:
-                    game.player.add_reward(quest.reward)
-                    game.player.inventory["lance"] = Item("lance", "lance, faite de bois et de pierre taillée", 0.25)
+        status = quest.check_answer(response, game.player)
+        if status is False:
+            quest.question.reset()
+            game.teleport_to_era_checkpoint()
+            return False
 
-        else:
-            quest.errors += 1
-            remaining = 3 - quest.errors
-
-            if remaining > 0:
-                print(f"❌ Mauvaise réponse. Il te reste {remaining} tentative(s).")
-                print("💡 Indice : en dessous de 8")
-            else:
-                print("💀 Tu as échoué trop de fois.")
-                game.player.is_alive = False
-                print("☠️ Tu es mort.")
-        
-        
+        return True

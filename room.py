@@ -29,23 +29,27 @@ class Room:
     <class 'dict'>
 
     """
-    # Define the constructor. 
-    def __init__(self, name, description):
+    # Define the constructor.
+    def __init__(self, name, description, era=None, checkpoint=False,):
         self.name = name
         self.description = description
         self.exits = {}
         self.inventory = {}
         self.characters = {}
+        self.era = era
+        self.checkpoint = checkpoint
 
-    
+
     # Define the get_inventory method.
     def get_inventory(self):
         if not self.inventory and not self.characters:
             return "Rien ni personne à l’horizon."
-       
+
         result = "Vous voyez :\n"
-        for item in self.inventory.values():
-            result += f"- {item}\n"
+        for items in self.inventory.values():
+            item=items[0]
+            quantity=len(items)
+            result += f"- {item.name}(x{quantity}) : {item.description}\n"
         result+="\n"
         for char in self.characters.values():
             result += f"- {char}\n"
@@ -59,18 +63,17 @@ class Room:
             return self.exits[direction]
         else:
             return None
-    
+
     # Return a string describing the room's exits.
     def get_exit_string(self):
-        exit_string = "Sorties: " 
+        exit_string = "Sorties: "
         for exit in self.exits.keys():
             if self.exits.get(exit) is not None:
                 exit_string += exit + ", "
         exit_string = exit_string.strip(", ")
         return exit_string
-    
+
 
     # Return a long description of this room including exits.
     def get_long_description(self):
         return f"Vous êtes {self.description}\n\n{self.get_exit_string()}\n"
-    
