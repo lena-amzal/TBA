@@ -16,9 +16,7 @@ MSG0 = "\nLa commande '{command_word}' ne prend pas de paramètre.\n"
 # The MSG1 variable is used when the command takes 1 parameter.
 MSG1 = "\nLa commande '{command_word}' prend 1 seul paramètre.\n"
 
-from quest import Quest
-from room import Room
-from item import Item
+from item import Weapon
 class Actions:
 
     def go(game, list_of_words, number_of_parameters):
@@ -63,17 +61,16 @@ class Actions:
             print(player.current_room.get_long_description())  # Affiche la salle actuelle
             return False
 
-
-        # Check if the player can leave the current era
+        # Check if the player can leave the current world
         next_room = player.current_room.exits.get(direction)
         try:
-            if next_room.era != game.current_era :
-                if not game.can_leave_current_era():
-                    print("\n⛔ Vous devez terminer toutes les quêtes de ce monde avant de le quitter.\n")
+            if next_room.world != game.current_world :
+                if not game.can_leave_current_world():
+                    print("\n⛔ Vous ne pouvez pas quitter tant que les quêtes de ce monde ne sont pas terminées.\n")
                     return False
-                # If the player is entering a new era, update the current_era
-                game.current_era = next_room.era
-                print(f"\nBienvenue dans le monde : {game.current_era}\n")
+                # If the player is entering a new world, update the current_world
+                game.current_world = next_room.world
+                print(f"\nBienvenue dans le monde : {game.current_world}\n")
 
         except AttributeError:
             print("Direction invalide.")
@@ -86,33 +83,32 @@ class Actions:
                 print(f"\n⛔ Vous ne pouvez pas entrer dans '{next_room.name}' tant que la quête '{quest_title}' n'est pas terminée.\n")
                 return False
 
-
-        # Tenter déplacement dans la direction choisie
+        # Move the player to the next room.
         result = player.move(direction)
         current_room = player.current_room
 
         # Check for questions in active quests
         for quest in player.quest_manager.active_quests:
             if quest.trigger_room:
-                    if current_room.name == quest.trigger_room and not quest.is_completed:
-                        quest.show_question()
+                if current_room.name == quest.trigger_room and not quest.is_completed:
+                    quest.show_question()
 
         # Move Shana to follow the player
         game.move_shana()
 
         # Move some characters randomly
-        character = list(current_room.characters.keys())
-        for char_name in character:
-            if char_name not in ["Varkk", "Shana"]:
-                char = current_room.characters[char_name]
+        characters = list(current_room.characters.values())
+        for char in characters:
+            if char.name not in ["Varkk", "Shana"] and current_room.world==char.world:
+                char = current_room.characters[char.name]
                 char.move()
         player.get_history()
 
         # Trigger room-based quests
-        game.trigger_room()
+        player.quest_manager.check_room_triggers(current_room.name)
 
         # Check room visit objectives
-        game.player.quest_manager.check_room_objectives(current_room.name)
+        player.quest_manager.check_room_objectives(current_room.name)
         return result
 
 
@@ -334,11 +330,11 @@ class Actions:
             return False
 
         # Check quest objectives related to using items
-        for quest in player.quest_manager.active_quests:
+        for quest in game.player.quest_manager.active_quests:
             for i, objective in enumerate(quest.objectives):
                 if f"Utiliser {item_name}" in objective:
                     for previous_objective in quest.objectives[:i]:
-                        if not quest.is_objective_completed(previous_objective):
+                        if previous_objective not in quest.completed_objectives:
                             print(f"Vous devez d'abord compléter l'objectif '{previous_objective}' avant d'utiliser '{item_name}'.")
                             return False
                     print(f"Vous utilisez '{item_name}'.")
@@ -378,14 +374,14 @@ class Actions:
         # Get the response from the command
         response = " ".join(list_of_words[1:])
         quest = game.player.quest_manager.get_active_question_quest()
-        if not quest.question or quest is None:
+        if quest is None or not quest.question:
             print("Aucune question n'est posée.")
             return False
 
         status = quest.check_answer(response, game.player)
         if status is False:
             quest.question.reset()
-            game.teleport_to_era_checkpoint()
+            game.teleport_to_checkpoint()
             return False
 
         return True
@@ -407,33 +403,36 @@ class Actions:
             return False
 
         while boss.is_alive:
-            action = input("> Que faites-vous ? (use lance / use potion) ").strip().lower()
-            if action == "use lance":
-                dmg = 1000
-                boss.take_damage(dmg)
-                print(f"Vous infligez {dmg} points de dégâts. PV du boss: {boss.hp}/{boss.max_hp}")
-                if not boss.is_alive:
-                    print(f"🏆 Félicitations ! Vous avez vaincu {boss.name} !")
-                    player.current_room.boss = None  # le boss est vaincu
-                    player.quest_manager.check_action_objectives("Vaincre", boss.name)
-                    return True
-            elif action == "use potion":
-                if "Potion" in player.inventory:
-                    player.inventory["Potion"].pop()
-                    heal = 200
-                    player.hp += heal
-                    print(f"Vous buvez une potion et récupérez {heal} PV. Vos PV: {player.hp}")
-                else:
-                    print("Vous n'avez pas de potion.")
-            else:
-                print("Action inconnue ! Utilisez 'attaquer' ou 'potion'.")
+            item_name = input("> Que faites-vous ? (<weapon>/potion) ").strip().lower()
+            if item_name not in player.inventory :
+                print(f"Vous ne possédez pas {item_name}")
+                continue
+            if item_name == "potion" and len(player.inventory["potion"]) != 0:
+                player.inventory["potion"].pop()
+                heal = 10000
+                player.hp += heal
+                print(f"Vous buvez une potion et récupérez {heal} PV. \nVos PV: {player.hp}")
+                continue
 
-            # Boss attaque aléatoirement
+            weapon = player.inventory[item_name][0]
+
+            if not isinstance(weapon, Weapon) :
+                print("Cet objet n'est pas une arme")
+                continue
+            else :
+                dmg=weapon.damage
+                print(boss.take_damage(dmg))
+                if not boss.is_alive:
+                    player.quest_manager.check_action_objectives("Vaincre", boss.name)
+                    player.current_room.boss = None
+                    return True
+
+            # Boss attacks back
             if boss.is_alive:
                 dmg = 5000
                 player.take_damage(dmg)
                 if player.hp <= 0:
-                    game.teleport_to_era_checkpoint()
+                    game.teleport_to_checkpoint()
                     return False
 
 

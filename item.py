@@ -12,7 +12,7 @@ class Item:
     Methods:
         __init__(self, name, description) : The constructor.
         __str__(self) : return string representation of the item.
-    
+
     Examples:
     >>> item = Item("nom de l'objet","description de l'objet")
     >>> item.name
@@ -21,15 +21,29 @@ class Item:
     "description de l'objet"
 
     """
-    # Define the constructor. 
+    # Define the constructor.
     def __init__(self, name, description, weight):
         self.name = name
         self.description = description
-        self.weight = weight 
+        self.weight = weight
 
     # Define the string representation method.
     def __str__(self):
         return f"{self.name} : {self.description} ( {self.weight} kg)"
-    
-  
 
+
+class Weapon(Item):
+    """
+    This class represents a weapon, which is a specific type of Item
+    with a damage value.
+    """
+
+    def __init__(self, name, description, weight, damage):
+        super().__init__(name, description, weight)
+        self.damage = damage
+
+    def __str__(self):
+        return (
+            f"{self.name} : {self.description} "
+            f"({self.weight} kg, {self.damage} dmg)"
+        )

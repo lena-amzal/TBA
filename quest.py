@@ -16,7 +16,7 @@ class Quest:
 
 
     def __init__(self, title, description, objectives=None, reward=None,\
-                 trigger_room=None, era=None, question=None):
+                 trigger_room=None, world=None, question=None):
         """
         Initialize a new quest.
 
@@ -52,7 +52,7 @@ class Quest:
         self.is_active = False
         self.reward = reward
         self.trigger_room = trigger_room
-        self.era=era
+        self.world=world
         self.question = question
 
 
@@ -291,7 +291,9 @@ class Quest:
             f"Explorer {room_name}",
             f"Aller à {room_name}",
             f"Aller au {room_name}",
-            f"Entrer dans {room_name}"
+            f"Entrer dans {room_name}",
+            f"Aller à l'{room_name}",
+            f"Aller à la {room_name}"
         ]
 
         for objective in room_objectives:
@@ -367,7 +369,9 @@ class Quest:
         True
         """
         for objective in self.objectives:
-           if counter_name in objective and action in objective and objective not in self.completed_objectives:
+            if counter_name in objective \
+                            and action in objective \
+                            and objective not in self.completed_objectives:
                 # Extract number from objective (e.g., "Visiter 3 lieux" -> 3)
                 if current_count is None:
                     current_count = 0
@@ -831,7 +835,7 @@ class Question:
         if self.failed:
             return False,"❌ Vous n'avez plus de tentatives."
 
-        if player_answer.lower() == self.correct_answer:
+        if player_answer.lower() == self.correct_answer.lower():
             return True, "✅ Bonne réponse !"
 
         self.attempts_left -= 1
@@ -843,6 +847,6 @@ class Question:
         return "Retry", f"❌ Mauvaise réponse. Tentatives restantes : {self.attempts_left}"
 
     def reset(self):
+        """Reset the question attempts."""
         self.failed = False
         self.attempts_left = self.max_attempts
-

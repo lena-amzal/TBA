@@ -1,4 +1,4 @@
-# This file contains the Room class.
+"""Define the Room class"""
 
 
 class Room:
@@ -29,21 +29,35 @@ class Room:
     <class 'dict'>
 
     """
-    # Define the constructor.
-    def __init__(self, name, description, era=None, checkpoint=False, locked_by_quest=None):
+    def __init__(self, name, description, world=None, checkpoint=False, locked_by_quest=None):
+        """
+        Initialize a new room.
+
+        Args:
+            name (str): The name of the room.
+            description (str): The description of the room.
+            world (str): The world this room belongs to (optional).
+            checkpoint (bool): Whether this room is a checkpoint (default: False).
+            locked_by_quest (str): Quest title that locks this room (optional).
+        """
         self.name = name
         self.description = description
         self.exits = {}
         self.inventory = {}
         self.characters = {}
         self.boss = None
-        self.era = era
+        self.world = world
         self.checkpoint = checkpoint
         self.locked_by_quest = locked_by_quest
 
 
-    # Define the get_inventory method.
     def get_inventory(self):
+        """
+        Get a description of all items and characters in the room.
+
+        Returns:
+            str: A formatted string describing items and characters present.
+        """
         if not self.inventory and not self.characters:
             return "Rien ni personne à l’horizon."
 
@@ -55,21 +69,29 @@ class Room:
         result+="\n"
         for char in self.characters.values():
             result += f"- {char}\n"
+        if self.boss is not None :
+            result+=f"-{self.boss}\n"
         return result
 
-    # Define the get_exit method.
     def get_exit(self, direction):
+        """
+        Get the room in the given direction.
 
-        # Return the room in the given direction if it exists.
-        if direction in self.exits.keys():
-            return self.exits[direction]
-        else:
-            return None
+        Args:
+            direction (str): The direction to check (N, E, S, O, U, D).
+
+        Returns:
+            Room: The room in that direction or None if no exit exists.
+        """
 
     # Return a string describing the room's exits.
     def get_exit_string(self):
+        """
+        Returns:
+            exit_string (str) : Sorties : (N, E, S, O, U, D)
+        """
         exit_string = "Sorties: "
-        for exit in self.exits.keys():
+        for exit in self.exits:
             if self.exits.get(exit) is not None:
                 exit_string += exit + ", "
         exit_string = exit_string.strip(", ")
@@ -78,4 +100,10 @@ class Room:
 
     # Return a long description of this room including exits.
     def get_long_description(self):
+        """
+        Get a long description of the room including its description and available exits.
+
+        Returns:
+            str: A formatted string with the room description and exits.
+        """
         return f"Vous êtes {self.description}\n\n{self.get_exit_string()}\n"
