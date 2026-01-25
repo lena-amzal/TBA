@@ -325,7 +325,6 @@ classDiagram
 ## Perspectives de développement
     -Système de sauvegarde / chargement
     -Carte interactive affichant les pièces découvertes
-    -Contre-attaque des boss
     -Choix narratifs influençant l’histoire
     -Système de statistiques (force, défense, intelligence)
     -Nouvelles ères temporelles (futur, Moyen Âge, mythologie)
