@@ -273,7 +273,7 @@ class Game:
         "une énorme créature préhistorique, couverte de poils épais,\n"
         "avec de longues défenses courbées et des yeux perçants.",
         30000,
-        1000,
+        8000,
         terrain_de_chasse,
         )
         terrain_de_chasse.boss = mammouth
@@ -281,7 +281,7 @@ class Game:
             "Osirakh",
             "une créature possédant le corps d'un lion et la tête d'un aigle.",
             40000,
-            1500,
+            14000,
             osireon,
         )
         osireon.boss = osirakh
@@ -366,7 +366,7 @@ class Game:
         reward="entrée de la pièce secrète",
         trigger_room="Impasse",
         question=Question("Qui est le dieu égyptien de la sagesse et de l'écriture ?\n"
-        "A : Seth,\nB : Thot,\nC : Osiris", "B", 3),
+        "A : Seth,\nB : Thot,\nC : Osiris", "B", 1),
         world="Iskhet",
         )
 
@@ -426,7 +426,12 @@ class Game:
         Returns:
             bool: True if the player has lost, False otherwise.
         """
-        if self.teleport_to_checkpoint() is True :
+        player = self.player
+        if not player.is_alive:
+            print(f"\n💀 {player.name}, vous êtes mort !")
+            self.teleport_to_checkpoint()
+            player.is_alive = True
+            player.hp=player.max_hp
             return True
         return False
 
@@ -440,7 +445,6 @@ class Game:
         print("💥 Vous êtes renvoyé au point de départ...\n")
         self.player.current_room = checkpoint
         self.move_shana()
-        self.player.history.pop()
         print(checkpoint.get_long_description())
         return True
 
@@ -498,6 +502,7 @@ class Game:
             command = self.commands[command_word]
             command.action(self, list_of_words, command.number_of_parameters)
             self.win()
+            self.lose()
 
     # Print the welcome message
     def print_welcome(self):
