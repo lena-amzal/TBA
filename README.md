@@ -1,4 +1,4 @@
-#Voyage à travers le temps -Projet TBA
+#Voyage à travers les Mondes -Projet TBA
 
 
 ## Guide utilisateur
@@ -30,7 +30,7 @@ Aethern, elle est composée de **4 lieux**:
 
 Iskhet, elle est composée de **7 lieux**:
 
-    -**Couloir** du 1er étage (checkpoint) : entrée principale de la pyramide.
+    -**Couloir** du 1er étage (checkpoint) : la zone de la pyramide où le joeur est téléporté.
 
     -**Impasse** : mur d’hiéroglyphes déclenchant une énigme.
 
@@ -46,16 +46,14 @@ Iskhet, elle est composée de **7 lieux**:
 
 ### Conditions de victoire et de défaite
 
-    Victoire: Le joueur gagne lorsque toutes les quêtes sont complétées, toutes époques confondues.
+    Victoire: Le joueur gagne lorsque toutes les quêtes sont complétées, dans les 2 mondes.
 
         Message final : "Bravo <votre nom> et Shana ! Vous avez réussi à arriver jusqu'ici ! Votre prochain départ pour Elysia se fera bientôt !"
 
 
 
-    Défaite: Le joueur perd si:
-                        -ses points de vie tombent à zéro
-                        -il échoue à des étapes clés (ex : combattre sans l’objet requis)
-                        -il ne remplit pas certaines conditions vitales (ex : créer du feu dans l’abri)
+    Défaite: Le joueur perd si ses points de vie tombent à zéro.
+
 
 ### Les commandes
 
@@ -83,9 +81,9 @@ Le jeu possède actuellement **6 quêtes**:
 
     -**Le Mammouth I** : Un combat oppose un mammouth à un homme préhistorique. Une question vous est posée.
 
-        Déclenchement : entrée dans la pièce Terrain de chasse
+        Déclenchement : entrée dans la zone Terrain de chasse
 
-        Objectifs : Aller au terrain de chasse. Répondre correctement à la question :« Quel est le poids moyen d’un mammouth adulte ? »
+        Objectifs : Aller au terrain de chasse. Répondre correctement à la question : "Quel est le poids moyen d’un mammouth adulte ?"
 
             **Solution** : `answer 7`
 
@@ -118,9 +116,9 @@ Le jeu possède actuellement **6 quêtes**:
 
     -**Les Hiéroglyphes de la Pyramide**: Une énigme apparaît sous forme de question.
 
-    Déclenchement : entrée dans la pièce Impasse
+    Déclenchement : entrée dans la zone Impasse
 
-    Objectifs :Aller à l’Impasse. Répondre correctement à la question « Qui est le dieu égyptien de la sagesse et de l’écriture ? »
+    Objectifs : Aller à l’impasse. Répondre correctement à la question  "Qui est le dieu égyptien de la sagesse et de l’écriture ?"
         **Solution**: `answer B`
 
     Spécificité : question à choix multiples
@@ -134,11 +132,11 @@ Le jeu possède actuellement **6 quêtes**:
     Objectifs : Aller à Osireon. Utiliser la clé
         **Solution**: `take cle` et 'use cle'
 
-    Récompense : progression vers la fin de l’ère
+    Récompense : progression vers la fin de la quête de ce monde
 
     -**Le Gardien d’Osireon**: Vaincre Osirakh, le gardien de la pyramide.
 
-    Déclenchement : entrée dans la salle Osireon
+    Déclenchement : sortie de la pyramide, aller à Osireon
 
     Objectifs : Aller à Osireon. Vaincre Osirakh
 
@@ -154,16 +152,16 @@ Le jeu possède actuellement **6 quêtes**:
 
 - `game.py` / `Game` : description de l'environnement, interface avec le joueur ;
 - `room.py` / `Room` : propriétés génériques d'un lieu  ;
-- `player.py` / `Player` : le joueur ;
+- `player.py` / `Player` : le joueur et ses points de vie ;
 - `command.py` / `Command` : les consignes données par le joueur ;
 - `actions.py` / `Action` : les interactions entre le joueur et l'état du jeu ;
 - `character.py` / `Character` : : personnages non-joueurs, dialogues et position dans les pièces ;
-- `boss.py` / `Boss` : gestion des ennemis puissants, points de vie et attaques ;
+- `boss.py` / `Boss` : gestion des ennemis et attaques ;
 -`quest.py` / `Quest` `QuestManager` : gestion des quêtes, objectifs, déclencheurs et récompenses ;
 - `item.py` / `Item` : définition des objets récupérables, poids, effets ;
 
 ### Diagramme des classes
-
+```mermaid
 classDiagram
     %% Classes principales
     class Game {
@@ -171,17 +169,17 @@ classDiagram
         - rooms: list
         - commands: dict
         - player: Player
-        - shana: Player
+        - shana: Character
         - direction: set
         - debug: bool
-        - current_era: str
+        - current_world: str
         - era_checkpoints: dict
         + setup()
         + play()
-        + can_leave_current_era()
+        + can_leave_current_world()
         + move_shana()
         + trigger_room()
-        + teleport_to_era_checkpoint()
+        + teleport_to_checkpoint()
     }
 
     class Player {
@@ -321,6 +319,7 @@ classDiagram
     Character "1" --> "1" Room : current_room
     Boss "1" --> "1" Room : current_room
     Game "1" --> "*" Command
+```
 
 ## Perspectives de développement
     -Système de sauvegarde / chargement

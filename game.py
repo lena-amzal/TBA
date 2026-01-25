@@ -173,7 +173,8 @@ class Game:
         "Iskhet",
         )
         self.rooms.append(sortie)
-        osireon = Room("Osireon", "devant la créature Osirakh", "Iskhet", False, "Les Mystères d'Iskhet")
+        osireon = Room(
+        "Osireon", "devant la créature Osirakh", "Iskhet", False, "Les Mystères d'Iskhet")
         self.rooms.append(osireon)
 
         # Create exits for rooms
@@ -361,7 +362,7 @@ class Game:
 
         quest_hyeroglyphes = Quest(
         title="Les Hiéroglyphes De La Pyramide",
-        description="Une fenêtre bleue apparait avec marqué ceci :",
+        description="Une fenêtre apparaît avec marqué ceci :",
         objectives=["Aller à Impasse", "Répondre à la question"],
         reward="entrée de la pièce secrète",
         trigger_room="Impasse",
