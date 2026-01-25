@@ -7,6 +7,7 @@ from player import Player
 from command import Command
 from actions import Actions
 from character import Character
+from boss import Boss
 from item import Item
 from quest import Quest
 from quest import Question
@@ -23,7 +24,7 @@ class Game:
         self.shana=None
         self.direction= set() #ensemble des directions valides
         self.debug=False
-        self.current_era = "Préhistoire"
+        self.current_era = "Aethern"
         self.era_checkpoints = {}
 
 
@@ -57,6 +58,8 @@ class Game:
         self.commands["talk"]=talk
         use = Command("use", " <item> : utiliser un item de l'inventaire", Actions.use, 1)
         self.commands["use"] = use
+        fight = Command("fight", " : combattre un boss dans la pièce", Actions.fight, 0)
+        self.commands["fight"] = fight
         self.commands["quests"] = Command("quests", " : afficher la liste des quêtes", Actions.quests, 0)
         self.commands["quest"] = Command("quest", " <titre> : afficher les détails d'une quête", Actions.quest, 1)
         self.commands["activate"] = Command("activate", " <titre> : activer une quête", Actions.activate, 1)
@@ -64,24 +67,41 @@ class Game:
         self.commands["answer"] = Command("answer", " <réponse> : répondre à une question posée par un personnage", Actions.answer, 1)
 
         # Setup rooms
-        grotte = Room("Grotte", "dans une grotte sombre et humide, les murs suintent d'humidité et l'air est frais et chargé de l'odeur de la terre mouillée.", "Préhistoire", True)
+        grotte = Room("Grotte", "dans une grotte sombre et humide, les murs suintent d'humidité et l'air est frais et chargé de l'odeur de la terre mouillée.", "Aethern", True)
         self.rooms.append(grotte)
-        terrain_de_chasse = Room("terrain de chasse", "dans une vaste plaine recouverte de neige, silencieuse et infinie. ", "Préhistoire")
+        terrain_de_chasse = Room("terrain de chasse", "dans une vaste plaine recouverte de neige, silencieuse et infinie. ", "Aethern")
         self.rooms.append(terrain_de_chasse)
-        abri= Room("Grotte du compagnon", "dans la grotte de Varkk. Des peaux de bêtes recouvrent le sol, des outils de chasse sont accrochés aux murs. Il y a des brindilles empilées dans un coin et des jouets dans l'autre.", "Préhistoire")
+        abri= Room("Grotte du compagnon", "dans la grotte de Varkk. Des peaux de bêtes recouvrent le sol, des outils de chasse sont accrochés aux murs. Il y a des brindilles empilées dans un coin et des jouets dans l'autre.", "Aethern")
         self.rooms.append(abri)
-        coin_feu= Room("coin feu", "dans un coin de la grotte, où se trouve des brindilles.", "Préhistoire")
+        coin_feu= Room("coin feu", "dans un coin de la grotte, où se trouve des brindilles.", "Aethern")
         self.rooms.append(coin_feu)
-        egypte_antique = Room("couloir dans la pyramide", "dans une pyramide, où la pierre polie reflète faiblement la lumière des torches. L’air est sec et chargé d’une atmosphère mystique, ponctuée par l’écho de tes pas.", "Iskhet",True)
-        self.rooms.append(egypte_antique)
-        question_chambre_cachee = Room("Impasse Hiéroglyphes", "dans une impasse, face à vous les murs sont couverts de hiéroglyphes, racontant l'histoire des dieux et des rois.", "Iskhet")
-        self.rooms.append(question_chambre_cachee)
-        chambre_cachee = Room("Chambre cachée", "dans une chambre cachée qui s'est debloquée après avoir répondu aux questions d'Imhopen, au sol une clé rouillée que vous ramassez.", "Iskhet")
-        self.rooms.append(chambre_cachee)
-        porte = Room("Porte verouillée", "devant une porte fermée a clé à votre droite se trouve une zone peu éclairée", "Iskhet")
-        self.rooms.append(porte)
-        Osireon = Room("Osireon", "devant la créature sphinx", "Iskhet")
-        self.rooms.append(Osireon)
+        couloir = Room("couloir du 1er étage", "dans une pyramide, où la pierre polie reflète faiblement la lumière des torches. L’air est sec et chargé d’une atmosphère mystique, ponctuée par l’écho de vos pas.", "Iskhet",True)
+        self.rooms.append(couloir)
+        impasse = Room("Impasse", "dans une impasse, face à vous le mur est couvert d'hiéroglyphes, racontant l'histoire des dieux et des rois.", "Iskhet")
+        self.rooms.append(impasse)
+        piece_secrete = Room("Pièce secrète", "entrés dans une pièce, où des papyrus jonchent le sol et les murs. Au milieu du désordre, une clé corrodée par le temps repose sur le sol", "Iskhet", "Les Hiéroglyphes De La Pyramide")
+        self.rooms.append(piece_secrete)
+        escalier = Room("Escalier sombre", "dans un escalier en colimaçon, où les murs de pierre rugueuse semblent absorber la lumière, plongeant l'espace dans une obscurité presque totale. L'air est frais et chargé d'une atmosphère mystérieuse.", "Iskhet")
+        self.rooms.append(escalier)
+        couloir02 = Room("Couloir du 2ème étage", "dans un couloir étroit, où des torches vacillantes projettent des ombres dansantes sur les murs ornés de fresques anciennes.", "Iskhet")
+        self.rooms.append(couloir02)
+        sortie = Room("Sortie", "devant une porte fermée a clé à votre droite se trouve une zone peu éclairée", "Iskhet")
+        self.rooms.append(sortie)
+        osireon = Room("Osireon", "devant la créature sphinx", "Iskhet")
+        self.rooms.append(osireon)
+
+        # Create exits for rooms
+        grotte.exits = {"N" : terrain_de_chasse, "E" : None, "S" : None, "O" : None}
+        terrain_de_chasse.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : couloir}
+        abri.exits = {"N" : None, "E" : coin_feu, "S" : None, "O" : terrain_de_chasse}
+        coin_feu.exits = {"N" : None, "E" : None, "S" : None, "O" : abri}
+        couloir.exits = {"D" : sortie , "E" : impasse , "S" : None, "O" : escalier}
+        escalier.exits = {"U" : couloir02 , "E" : couloir, "S" : None, "O" : None}
+        couloir02.exits = {"D" : escalier , "E" : sortie, "S" : None, "O" : None}
+        impasse.exits = {"D" : piece_secrete, "E" : couloir, "S" : None, "O" : None}
+        piece_secrete.exits = {"U" : impasse, "E" : None, "S" : None, "O" : None}
+        sortie.exits = {"E" : None, "S" : None, "O" : couloir02, "N": osireon}
+        osireon.exits = {"S" : sortie, "E" : None, "O" : None, "N" : None}
 
         # Setup checkpoints for each era
         for room in self.rooms:
@@ -113,8 +133,14 @@ class Game:
         milo=Character("Milo", "un jeune garçon curieux, vêtu de peaux de bêtes, avec des yeux brillants d'innocence.", abri, ["Coucou, moi c'est Milo.", "Merci d'avoir aidé mon papa à chasser le mammouth et ramener à manger."])
         abri.characters["Milo"]=milo
 
+        # Create boss for rooms
+        mammouth = Boss("Mammouth", "une énorme créature préhistorique, couverte de poils épais, avec de longues défenses courbées et des yeux perçants.", 30000, 1000, terrain_de_chasse)
+        terrain_de_chasse.boss = mammouth
+        osirakh = Boss("Osirakh", "une créature imposante, avec le corps d'un lion majestueux, les ailes d'un aigle puissant et la tête ornée d'un masque doré représentant le dieu Osiris.", 40000, 1500, osireon)
+        osireon.boss = osirakh
+
         # Create items for rooms
-        lance = Item("lance", "une lance faite de bois et de pierre taillée", 0.25)
+            # Items in Aethern
         branche_01 = Item("branche", "une branche sèche", 0.5)
         grotte.inventory["branche"] = [branche_01]
         branche_02 = Item("branche", "une branche sèche", 0.5)
@@ -123,24 +149,17 @@ class Game:
         branche_03 = Item("branche", "une branche sèche", 0.5)
         coin_feu.inventory["branche"] = [branche_03]
         coin_feu.inventory["silex"]=[silex]
+            # Items in Iskhet
         cle = Item("cle", "une clé rouillée", 0.1)
-        chambre_cachee.inventory["cle"] = [cle]
-        potion = Item("potion", "une potion de vie qui vous permet de vous soigner", 0.5)
+        piece_secrete.inventory["cle"] = [cle]
+        potion02 = Item("potion de vie", "une potion de vie qui vous permet de vous soigner", 0.5)
+        couloir02.inventory["potion de vie"] = [potion02]
         beamer = Item("beamer", "un beamer futuriste", 1)
-        Osireon.inventory["beamer"] = [beamer]
+        osireon.inventory["beamer"] = [beamer]
 
-
-        # Create exits for rooms
-        grotte.exits = {"N" : terrain_de_chasse, "E" : None, "S" : None, "O" : None}
-        terrain_de_chasse.exits = {"N" : None, "E" : abri , "S" : grotte, "O" : egypte_antique}
-
-        abri.exits = {"N" : None, "E" : coin_feu, "S" : None, "O" : terrain_de_chasse}
-        coin_feu.exits = {"N" : None, "E" : None, "S" : None, "O" : abri}
-        egypte_antique.exits = {"D" : porte , "E" : None , "S" : None, "O" : question_chambre_cachee}
-        question_chambre_cachee.exits = {"D" : chambre_cachee, "E" : egypte_antique, "S" : None, "O" : None}
-        chambre_cachee.exits = {"U" : question_chambre_cachee, "E" : None, "S" : None, "O" : None}
-        porte.exits = {"U" : egypte_antique, "E" : None, "S" : None, "O" : None, "N": Osireon}
-        Osireon.exits = {"S" : porte, "E" : None, "O" : None, "N" : None}
+        # Create items for rewards
+        lance = Item("lance", "une lance faite de bois et de pierre taillée", 0.25)
+        potion = Item("potion", "une potion de vie qui vous permet de vous soigner", 0.5)
 
         # Create player
         player_name = input("\nEntrez votre nom: ")
@@ -148,6 +167,8 @@ class Game:
         self.player.current_room = grotte
 
         # Setup quests
+
+        # Quests fo
         quest_mammouth_01 = Quest(
             title="Le Mammouth I",
             description="Devant vous se déroule un combat opposant un mammouth et un Homme préhistorique. Répondez à la question suivante.",
@@ -161,7 +182,7 @@ class Game:
         quest_mammouth_02 = Quest(
             title="Le Mammouth II",
             description=" Vainquez le mammouth et parle avec l'homme. Peut-être qu'il vous donnera quelque chose d'utile.",
-            objectives=["Utiliser la lance", "Parler à Varkk"],
+            objectives=["Vaincre le Mammouth", "Parler à Varkk"],
             reward= potion,
             era="Préhistoire"
         )
@@ -174,18 +195,42 @@ class Game:
             era="Préhistoire"
         )
 
+        quest_iskhet = Quest(
+            title="Les Mystères d'Iskhet",
+            description="Trouvez la sortie de la pyramide.",
+            objectives=["Aller à Osireon", "Utiliser la clé"],
+            reward="" ,
+            trigger_room="couloir du 1er étage",
+            era="Iskhet"
+        )
+
+        quest_hyeroglyphes = Quest(
+            title="Les Hiéroglyphes De La Pyramide",
+            description="Une fenêtre bleue apparait avec marqué ceci :",
+            objectives=["Aller à Impasse", "Répondre aux questions"],
+            reward="entrée de la pièce secrète",
+            trigger_room="Impasse",
+            question=Question("Qui est le dieu égyptien de la sagesse et de l'écriture ?\nA : Seth,\nB : Thot,\nC : Osiris", "B", 3),
+            era="Iskhet"
+        )
+
+        quest_osirakh= Quest(
+            title="Le Gardien d'Osireon",
+            description="Vaincre le sphinx gardien d'Osireon.",
+            objectives=["Aller à Osireon", "Vaincre Osirakh"],
+            reward="beamer",
+            trigger_room="Osireon",
+            era="Iskhet"
+        )
 
 
         # Add quests to player's quest manager
         self.player.quest_manager.add_quest(quest_mammouth_01)
         self.player.quest_manager.add_quest(quest_mammouth_02)
         self.player.quest_manager.add_quest(create_fire)
-
-
-
-
-
-
+        self.player.quest_manager.add_quest(quest_iskhet)
+        self.player.quest_manager.add_quest(quest_hyeroglyphes)
+        self.player.quest_manager.add_quest(quest_osirakh)
 
     def move_shana(self):
         """Move Shana to the player's current room."""
@@ -196,18 +241,6 @@ class Game:
             self.shana.current_room = self.player.current_room
             self.player.current_room.characters["Shana"] = self.shana
 
-    def handle_death(self):
-        if not self.player.is_alive:
-            self.player.respawn()
-
-    def respawn(self):
-        checkpoint = self.era_checkpoints.get(self.current_era)
-        print(f"\n Vous vous réveillez à : {checkpoint.name}\n")
-
-        self.player.is_alive = True
-        self.player.current_room = checkpoint
-
-        print(checkpoint.get_long_description())
 
     def win(self):
         quest_manager=self.player.quest_manager
@@ -246,7 +279,6 @@ class Game:
         self.player.current_room = checkpoint
         self.move_shana()
         self.player.history.pop()
-
         print(checkpoint.get_long_description())
 
     def can_leave_current_era(self):
@@ -263,11 +295,7 @@ class Game:
         # Loop until the game is finished
         while not self.finished:
             # Get the command from the player
-            if not self.player.is_alive:
-                self.respawn()
-                continue
-
-            self.process_command(input("> "))
+                self.process_command(input("> "))
 
         return None
 
@@ -296,7 +324,6 @@ class Game:
             command.action(self, list_of_words, command.number_of_parameters)
             # Vérifier les déclencheurs de quêtes basés sur la pièce actuelle
             self.trigger_room()
-            self.handle_death()
 
 
 

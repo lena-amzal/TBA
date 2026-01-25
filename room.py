@@ -30,14 +30,16 @@ class Room:
 
     """
     # Define the constructor.
-    def __init__(self, name, description, era=None, checkpoint=False,):
+    def __init__(self, name, description, era=None, checkpoint=False, locked_by_quest=None):
         self.name = name
         self.description = description
         self.exits = {}
         self.inventory = {}
         self.characters = {}
+        self.boss = None
         self.era = era
         self.checkpoint = checkpoint
+        self.locked_by_quest = locked_by_quest
 
 
     # Define the get_inventory method.

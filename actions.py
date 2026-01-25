@@ -79,16 +79,22 @@ class Actions:
             print("Direction invalide.")
             return False
 
+        if next_room.locked_by_quest:
+            quest_title = next_room.locked_by_quest
+            quest = player.quest_manager.get_quest_by_title(quest_title)
+            if not quest.is_completed:
+                print(f"\n⛔ Vous ne pouvez pas entrer dans '{next_room.name}' tant que la quête '{quest_title}' n'est pas terminée.\n")
+                return False
+
 
         # Tenter déplacement dans la direction choisie
-        old_room = player.current_room
         result = player.move(direction)
         current_room = player.current_room
 
         # Check for questions in active quests
         for quest in player.quest_manager.active_quests:
             if quest.trigger_room:
-                    if current_room.name == quest.trigger_room:
+                    if current_room.name == quest.trigger_room and not quest.is_completed:
                         quest.show_question()
 
         # Move Shana to follow the player
@@ -326,10 +332,17 @@ class Actions:
         if item_name not in game.player.inventory:
             print(f"Vous n'avez pas '{item_name}' dans votre inventaire.")
             return False
-        print(f"Vous utilisez '{item_name}'.")
 
         # Check quest objectives related to using items
-        game.player.quest_manager.check_action_objectives("Utiliser", item_name)
+        for quest in player.quest_manager.active_quests:
+            for i, objective in enumerate(quest.objectives):
+                if f"Utiliser {item_name}" in objective:
+                    for previous_objective in quest.objectives[:i]:
+                        if not quest.is_objective_completed(previous_objective):
+                            print(f"Vous devez d'abord compléter l'objectif '{previous_objective}' avant d'utiliser '{item_name}'.")
+                            return False
+                    print(f"Vous utilisez '{item_name}'.")
+                    quest.check_action_objective("Utiliser", item_name)
         return True
 
     def talk(game, list_of_words, number_of_parameters):
@@ -351,6 +364,77 @@ class Actions:
 
         # Check quest objectives related to talking to NPCs
         game.player.quest_manager.check_action_objectives("Parler à", npc_name)
+
+
+    @staticmethod
+    def answer(game, list_of_words, number_of_parameters):
+        l = len(list_of_words)
+        # If the number of parameters is incorrect, print an error message and return False.
+        if l != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG1.format(command_word=command_word))
+            return False
+
+        # Get the response from the command
+        response = " ".join(list_of_words[1:])
+        quest = game.player.quest_manager.get_active_question_quest()
+        if not quest.question or quest is None:
+            print("Aucune question n'est posée.")
+            return False
+
+        status = quest.check_answer(response, game.player)
+        if status is False:
+            quest.question.reset()
+            game.teleport_to_era_checkpoint()
+            return False
+
+        return True
+
+    def fight(game, list_of_words, number_of_parameters):
+        l = len(list_of_words)
+        if l != number_of_parameters + 1:
+            command_word = list_of_words[0]
+            print(MSG0.format(command_word=command_word))
+            return False
+
+        player = game.player
+
+        # Fight the boss in the current room
+        current_room = player.current_room
+        boss = current_room.boss
+        if not boss:
+            print("Il n'y a pas de boss à combattre dans cette pièce.")
+            return False
+
+        while boss.is_alive:
+            action = input("> Que faites-vous ? (use lance / use potion) ").strip().lower()
+            if action == "use lance":
+                dmg = 1000
+                boss.take_damage(dmg)
+                print(f"Vous infligez {dmg} points de dégâts. PV du boss: {boss.hp}/{boss.max_hp}")
+                if not boss.is_alive:
+                    print(f"🏆 Félicitations ! Vous avez vaincu {boss.name} !")
+                    player.current_room.boss = None  # le boss est vaincu
+                    player.quest_manager.check_action_objectives("Vaincre", boss.name)
+                    return True
+            elif action == "use potion":
+                if "Potion" in player.inventory:
+                    player.inventory["Potion"].pop()
+                    heal = 200
+                    player.hp += heal
+                    print(f"Vous buvez une potion et récupérez {heal} PV. Vos PV: {player.hp}")
+                else:
+                    print("Vous n'avez pas de potion.")
+            else:
+                print("Action inconnue ! Utilisez 'attaquer' ou 'potion'.")
+
+            # Boss attaque aléatoirement
+            if boss.is_alive:
+                dmg = 5000
+                player.take_damage(dmg)
+                if player.hp <= 0:
+                    game.teleport_to_era_checkpoint()
+                    return False
 
 
 
@@ -546,28 +630,4 @@ class Actions:
 
         # Show all rewards
         game.player.show_rewards()
-        return True
-
-    @staticmethod
-    def answer(game, list_of_words, number_of_parameters):
-        l = len(list_of_words)
-        # If the number of parameters is incorrect, print an error message and return False.
-        if l != number_of_parameters + 1:
-            command_word = list_of_words[0]
-            print(MSG1.format(command_word=command_word))
-            return False
-
-        # Get the response from the command
-        response = " ".join(list_of_words[1:])
-        quest = game.player.quest_manager.get_active_question_quest()
-        if not quest.question:
-            print("Aucune question n'est posée.")
-            return False
-
-        status = quest.check_answer(response, game.player)
-        if status is False:
-            quest.question.reset()
-            game.teleport_to_era_checkpoint()
-            return False
-
         return True

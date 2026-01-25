@@ -2,6 +2,7 @@
 
 from quest import QuestManager
 from item import Item
+
 class Player():
     """
     This class represents a player. A player is composed of a player name and a player self.
@@ -33,8 +34,8 @@ class Player():
         self.inventory = {}
         self.history = []
         self.max_weight=10
-        self.hp=100
-        self.max_hp=100
+        self.hp=20000
+        self.max_hp=20000
         self.is_alive=True
         self.move_count = 0  # Counter for player movements
         self.quest_manager = QuestManager(self)
@@ -86,17 +87,6 @@ class Player():
             for item in items:
                 total += item.weight
         return total
-
-    # Check room visit objectives
-        self.quest_manager.check_room_objectives(self.current_room.name)
-
-
-        # Increment move counter and check movement objectives
-        self.move_count += 1
-        self.quest_manager.check_counter_objectives("Se déplacer", self.move_count)
-
-
-        return True
 
     def take_damage(self, damage):
         self.hp -= damage
