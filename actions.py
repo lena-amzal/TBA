@@ -429,10 +429,9 @@ class Actions:
 
             # Boss attacks back
             if boss.is_alive:
-                dmg = 5000
+                dmg = boss.attack
                 player.take_damage(dmg)
                 if player.hp <= 0:
-                    game.teleport_to_checkpoint()
                     return False
 
 

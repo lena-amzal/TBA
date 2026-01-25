@@ -49,7 +49,6 @@ class Player:
         self.hp = 20000
         self.max_hp = 20000
         self.is_alive = True
-        self.move_count = 0  # Counter for player movements
         self.quest_manager = QuestManager(self)
         self.last_checkpoint = None
         self.rewards = []  # List to store earned rewards
@@ -134,7 +133,6 @@ class Player:
         )
         if self.hp == 0:
             self.is_alive = False
-            print("Vous êtes mort !\n")
 
     def add_reward(self, reward):
         """

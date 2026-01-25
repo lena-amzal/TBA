@@ -3,23 +3,23 @@
 
 ## Guide utilisateur
 
-### Installation 
+### Installation
     1. Installez une version égale ou supérieure à Python 3.9
     2. Forkez ou téléchargez le projet
     3. Lancez le jeu avec la commande: python game.py
 
 ### Contexte général
 
-Le joueur explore différents mondes (ères), interagit avec des personnages, combat des boss et accomplit des quêtes pour progresser.
+Le joueur explore différents mondes, interagit avec des personnages, combat des boss et accomplit des quêtes pour progresser.
 
-L’histoire débute dans une grotte préhistorique et vous mènera jusqu’à une mystérieuse pyramide égyptienne. Vos choix, vos objets et votre progression dans les quêtes détermineront votre victoire… ou votre défaite.
+L’histoire débute dans une grotte à Aethern et vous mènera jusqu’à une mystérieuse pyramide de Osireon à Iskhet. Vos choix, vos objets et votre progression dans les quêtes détermineront votre victoire… ou votre défaite.
 
 ### Univers du jeu
 
-Le jeu est divisé en ères temporelles :
+Le jeu est divisé en 2 mondes :
 
-Aethern (Préhistoire), elle est composée de **4 lieux**:
-    
+Aethern, elle est composée de **4 lieux**:
+
     **Grotte** (checkpoint) : point de départ du joueur, lieu du réveil et premières interactions avec Shana.
 
     **Terrain de chasse** : vaste plaine enneigée où se déroule le combat contre le Mammouth.
@@ -28,29 +28,29 @@ Aethern (Préhistoire), elle est composée de **4 lieux**:
 
     **Coin feu** : zone dédiée à la création du feu, liée à une quête essentielle.
 
-Iskhet (Égypte antique), elle est composée de **7lieux**:
-    
+Iskhet, elle est composée de **7 lieux**:
+
     -**Couloir** du 1er étage (checkpoint) : entrée principale de la pyramide.
 
     -**Impasse** : mur d’hiéroglyphes déclenchant une énigme.
 
     -**Pièce secrète** : salle cachée accessible après résolution des hiéroglyphes.
 
-    -**Escalier sombre** : escalier reliant les différents niveaux de la pyramide.
+    -**Escalier sombre** : escalier reliant les 2 niveaux de la pyramide.
 
-    -**Couloir du 2ᵉ étage** : couloir menant à des objets et à la sortie.
+    -**Couloir principal** : couloir menant à des objets et à la sortie.
 
     -**Sortie** : zone précédant l’affrontement final.
 
-    -**Osireon** : salle du boss final, le sphinx Osirakh.
+    -**Osireon** : lieu du boss final, la créature Osirakh.
 
 ### Conditions de victoire et de défaite
 
     Victoire: Le joueur gagne lorsque toutes les quêtes sont complétées, toutes époques confondues.
 
-        Message final :
+        Message final : "Bravo <votre nom> et Shana ! Vous avez réussi à arriver jusqu'ici ! Votre prochain départ pour Elysia se fera bientôt !"
 
-        « Toutes les quêtes ont été validées. Vous avez triomphé à travers les âges ! »
+
 
     Défaite: Le joueur perd si:
                         -ses points de vie tombent à zéro
@@ -93,7 +93,7 @@ Le jeu possède actuellement **6 quêtes**:
 
         Récompense : lance
 
-    
+
     -**Le Mammouth II**: Vaincre le mammouth et parler à Varkk.
 
         Déclenchement : après la quête Le Mammouth I
@@ -136,13 +136,13 @@ Le jeu possède actuellement **6 quêtes**:
 
     Récompense : progression vers la fin de l’ère
 
-    -**Le Gardien d’Osireon**: Vaincre le sphinx gardien de la pyramide.
+    -**Le Gardien d’Osireon**: Vaincre Osirakh, le gardien de la pyramide.
 
     Déclenchement : entrée dans la salle Osireon
 
     Objectifs : Aller à Osireon. Vaincre Osirakh
 
-    Récompense : beamer
+    Récompense : Quitter Iskhet
 
 
 
@@ -325,11 +325,10 @@ classDiagram
 ## Perspectives de développement
     -Système de sauvegarde / chargement
     -Carte interactive affichant les pièces découvertes
-    -Contre-attaque des boss
     -Choix narratifs influençant l’histoire
     -Système de statistiques (force, défense, intelligence)
-    -Nouvelles ères temporelles (futur, Moyen Âge, mythologie)
-    -Interface graphique 
+    -Nouveaux mondes
+    -Interface graphique
 
 
 
